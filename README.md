@@ -1,55 +1,57 @@
 # Codex 路由矩阵
 
+Lead 指当前 Astra 或 Sol 主控。Luna 明确不支持或无访问权限时，主控将原工作包和进度转给能可靠胜任的 Sol Medium；容量错误先原地重试一次。质量失败由主控重新判断。
+
 [中文](#中文) | [English](#english)
 
 ## 中文
 
-Codex 路由矩阵是给 `gpt-5.6-sol` 使用的多模型协作插件。它让 Sol 继续负责理解需求、规划、拆分、整合和最终验收，同时把边界清楚、适合独立执行的工作交给 Luna Max、Sol Medium 或 Terra。
+Codex 路由矩阵是给 `gpt-6-astra` / `gpt-5.6-sol` 使用的多模型协作插件。它让 Lead 继续负责理解需求、规划、拆分、整合和最终验收，同时把边界清楚、适合独立执行的工作交给 Luna Max、Sol Medium 或 Terra。
 
 它解决的不是“每个任务都换模型”，而是两个更实际的问题：复杂任务如何安全并行，以及如何在不降低质量的前提下减少不必要的高价模型调用。
 
 ### 运行原理
 
-1. Sol 先理解任务，短任务或强耦合工作直接完成。
-2. 需要拆分时，Sol 为每个工作单元写清目标、范围、文件归属、依赖和验收标准。
+1. Lead 先理解任务，短任务或强耦合工作直接完成。
+2. 需要拆分时，Lead 为每个工作单元写清目标、范围、文件归属、依赖和验收标准。
 3. Luna Max 能可靠完成的低判断、可机械验证工作优先交给 Luna。
 4. Luna 不适合时，边界清楚、需要正常判断的独立工作交给 Sol Medium。
 5. Terra 只在具体任务上有明确优势时使用，不把“需要深思”本身当作选 Terra 的理由。
 6. 互不依赖、不会同时修改同一文件的工作可以并行。
-7. Worker 完成后，Sol 检查真实改动、重跑必要验证并最终决定是否接受。能力不足、越界或质量不达标的工作直接回到 Sol。
+7. Worker 完成后，Lead 检查真实改动、重跑必要验证并最终决定是否接受。能力不足、越界或质量不达标的工作直接回到 Lead。
 
 ```mermaid
 graph LR
-    A[任务] --> B[Sol 规划拆分] --> C{选择路线}
+    A[任务] --> B[Lead 规划拆分] --> C{选择路线}
     C --> D[Luna Max]
     C --> E[Sol Medium]
     C --> F[Terra]
-    C --> G[当前 Sol]
-    D --> H[Sol 验收]
+    C --> G[当前 Lead]
+    D --> H[Lead 验收]
     E --> H
     F --> H
     G --> H
-    H --> I[交付或 Sol 接管]
+    H --> I[交付或 Lead 接管]
 ```
 
 ### 模型分工
 
 | 角色 | 负责什么 |
 |---|---|
-| 当前 Sol | 理解、规划、拆分、整合、验收和兜底 |
+| 当前 Lead | 理解、规划、拆分、整合、验收和兜底 |
 | Luna Max | 规则冻结、判断少、容易验证且能可靠完成的执行工作 |
 | Sol Medium | 边界清楚、需要正常判断、可独立验证的工作 |
-| Terra XHigh / Max / Ultra | 在具体任务上确实比可用 Sol 路线更合适的工作 |
+| Terra XHigh / Max / Ultra | 在具体任务上确实比可用 Lead 路线更合适的工作 |
 | Sol Reviewer XHigh | 关键高风险改动的一次独立只读复审 |
 
-质量优先并不等于默认使用最贵模型。插件先判断任务是否适合 Luna；不适合才考虑 Sol Medium、Terra 或当前 Sol。路由一旦确定就保持不变，除非任务边界、可用性或结果发生变化，避免反复切换破坏上下文和缓存收益。
+质量优先并不等于默认使用最贵模型。插件先判断任务是否适合 Luna；不适合才考虑 Sol Medium、Terra 或当前 Lead。路由一旦确定就保持不变，除非任务边界、可用性或结果发生变化，避免反复切换破坏上下文和缓存收益。
 
 常规独立判断工作优先 Sol Medium；深推理本身不选择 Terra。
 
 ### 普通模式与 Super mode
 
-- 普通模式适合日常任务。短任务由当前 Sol 直接完成；只有下派确实有收益时才使用 Worker，通常从一个开始。
-- Super mode 适合大量互不依赖、写入不冲突的工作。它支持四层拆分和最多 25 个子线程，但实际并发仍受当前 Codex 宿主容量限制。Sol 仍会验收全部结果，质量标准不会降低。
+- 普通模式适合日常任务。短任务由当前 Lead 直接完成；只有下派确实有收益时才使用 Worker，通常从一个开始。
+- Super mode 适合大量互不依赖、写入不冲突的工作。它支持四层拆分和最多 25 个子线程，但实际并发仍受当前 Codex 宿主容量限制。Lead 仍会验收全部结果，质量标准不会降低。
 
 开启或关闭当前会话的 Super mode：
 
@@ -110,50 +112,52 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$HOME\.codex\.tmp\marketpla
 
 ## English
 
-Codex Routing Matrix gives a `gpt-5.6-sol` controller a small multi-model team. Sol keeps ownership of understanding, planning, decomposition, integration, and final acceptance. It delegates only bounded work that Luna Max, Sol Medium, or Terra can reliably complete.
+Lead means the current Astra or Sol controller. If Luna is unsupported or access is denied, use capable Sol Medium with the same packet and progress; retry capacity errors once first.
+
+Codex Routing Matrix gives a `gpt-6-astra` / `gpt-5.6-sol` controller a small multi-model team. Lead keeps ownership of understanding, planning, decomposition, integration, and final acceptance. It delegates only bounded work that Luna Max, Sol Medium, or Terra can reliably complete.
 
 The plugin is not designed to switch models for every prompt. It is designed to parallelize larger work safely and avoid expensive routes when a lower-cost capable route can deliver the same quality.
 
 ### How it works
 
-1. Sol understands the request and handles short or tightly coupled work directly.
-2. When decomposition helps, Sol freezes each unit's goal, scope, file ownership, dependencies, and acceptance checks.
+1. Lead understands the request and handles short or tightly coupled work directly.
+2. When decomposition helps, Lead freezes each unit's goal, scope, file ownership, dependencies, and acceptance checks.
 3. Luna Max is the first choice for low-judgment, mechanically verifiable work it can reliably complete.
 4. Sol Medium handles bounded independent work that needs normal judgment.
 5. Terra is used only for a clear task-specific advantage; deep reasoning alone does not select Terra.
 6. Independent, write-safe units may run in parallel.
-7. Sol inspects the real changes, reruns necessary checks, and accepts or rejects every result. Capability, scope, or quality failures return directly to Sol.
+7. Lead inspects the real changes, reruns necessary checks, and accepts or rejects every result. Capability, scope, or quality failures return directly to Lead.
 
 ```mermaid
 graph LR
-    A[Task] --> B[Sol plans and splits] --> C{Choose route}
+    A[Task] --> B[Lead plans and splits] --> C{Choose route}
     C --> D[Luna Max]
     C --> E[Sol Medium]
     C --> F[Terra]
-    C --> G[Current Sol]
-    D --> H[Sol acceptance]
+    C --> G[Current Lead]
+    D --> H[Lead acceptance]
     E --> H
     F --> H
     G --> H
-    H --> I[Deliver or Sol takes over]
+    H --> I[Deliver or Lead takes over]
 ```
 
 ### Model roles
 
 | Role | Responsibility |
 |---|---|
-| Current Sol | Understand, plan, split, integrate, verify, and fall back |
+| Current Lead | Understand, plan, split, integrate, verify, and fall back |
 | Luna Max | Frozen, low-judgment, mechanically verifiable execution it can reliably complete |
 | Sol Medium | Bounded, independently verifiable work that needs normal judgment |
-| Terra XHigh / Max / Ultra | Work with a clear task-specific advantage over available Sol routes |
+| Terra XHigh / Max / Ultra | Work with a clear task-specific advantage over available Lead routes |
 | Sol Reviewer XHigh | One independent read-only review for a critical high-risk change |
 
-Quality first does not mean selecting the most expensive model by default. The plugin checks Luna eligibility first, then considers Sol Medium, Terra, or the current Sol. Once selected, a route stays frozen until the unit, availability, or result changes, which avoids needless context switches and preserves cache value.
+Quality first does not mean selecting the most expensive model by default. The plugin checks Luna eligibility first, then considers Sol Medium, Terra, or the current Lead. Once selected, a route stays frozen until the unit, availability, or result changes, which avoids needless context switches and preserves cache value.
 
 ### Normal mode and Super mode
 
-- Normal mode is for everyday work. Sol handles short tasks directly and starts with one Worker only when delegation has net value.
-- Super mode is for many independent, write-safe units. It supports four delegation levels and up to 25 child threads, subject to the active Codex host's real capacity. Sol still verifies every result and keeps the same quality bar.
+- Normal mode is for everyday work. Lead handles short tasks directly and starts with one Worker only when delegation has net value.
+- Super mode is for many independent, write-safe units. It supports four delegation levels and up to 25 child threads, subject to the active Codex host's real capacity. Lead still verifies every result and keeps the same quality bar.
 
 Toggle Super mode for the current session:
 

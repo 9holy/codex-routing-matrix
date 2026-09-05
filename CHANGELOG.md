@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.8.5 - 2026-09-05
+
+- Support GPT-6 Astra alongside Sol as controller; keep Luna Max first and Sol Medium as the preferred capable alternative.
+- Route unsupported or access-denied Luna work to capable Sol Medium with its packet and progress; retry capacity once in context before rerouting.
+
 ## 0.8.4 - 2026-08-18
 
 - Support the same plugin on macOS and Linux, including Linux Codex CLI servers, through a Node setup entry, portable paths, legacy backup-path normalization, and a `python3` verification fallback.

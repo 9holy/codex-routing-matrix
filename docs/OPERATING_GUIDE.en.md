@@ -1,18 +1,20 @@
 # Operating Guide
 
+Lead means the current Astra or Sol controller. If Luna is unsupported or access is denied, Lead sends the unchanged work packet and progress to capable Sol Medium; capacity errors retry Luna once first. Quality failures return to Lead for reassessment.
+
 ## How one task runs
 
-The current `gpt-5.6-sol` always remains the controller. The plugin does not replace the root model or reasoning effort of a running task. It gives Sol a concise routing rule and four named agent profiles.
+The current `gpt-6-astra` / `gpt-5.6-sol` always remains the controller. The plugin does not replace the root model or reasoning effort of a running task. It gives Lead a concise routing rule and four named agent profiles.
 
-1. Sol first decides whether decomposition has net value. It handles short, tightly coupled, or naturally sequential work directly.
-2. Before delegation, Sol freezes each unit's goal, scope, single-writer ownership, dependencies, acceptance checks, and integration order.
+1. Lead first decides whether decomposition has net value. It handles short, tightly coupled, or naturally sequential work directly.
+2. Before delegation, Lead freezes each unit's goal, scope, single-writer ownership, dependencies, acceptance checks, and integration order.
 3. Luna Max is the first choice for frozen, low-judgment, mechanically verifiable work it can reliably complete.
 4. When Luna does not fit, Sol Medium is preferred for bounded, independently verifiable work that needs normal judgment.
 5. Terra is used only for a clear task-specific advantage in quality, context handling, parallel value, or total cost. Deep reasoning alone does not select Terra.
-6. Architecture, security, public interfaces, production data, irreversible operations, unclear requirements, and undiagnosed causes stay with the current Sol.
-7. Every Worker result returns to Sol. Sol inspects the actual diff, reruns necessary checks in integration order, then accepts it, returns one local defect once, or takes over.
+6. Architecture, security, public interfaces, production data, irreversible operations, unclear requirements, and undiagnosed causes stay with the current Lead.
+7. Every Worker result returns to Lead. Lead inspects the actual diff, reruns necessary checks in integration order, then accepts it, returns one local defect once, or takes over.
 
-This keeps final quality judgment with Sol while assigning suitable execution to a lower-cost capable route. A route stays frozen within the task and is reconsidered only when the unit, boundary, availability, or result changes.
+This keeps final quality judgment with Lead while assigning suitable execution to a lower-cost capable route. A route stays frozen within the task and is reconsidered only when the unit, boundary, availability, or result changes.
 
 ## Normal mode
 
@@ -22,7 +24,7 @@ Normal mode is for everyday work:
 - Non-short work starts with one Worker only when delegation or parallelism has net value.
 - Only independent, write-safe units run in parallel.
 - Homogeneous batches verify one representative unit before filling real host capacity and replacing completed Workers.
-- While Workers run, Sol uses one long event-driven wait rather than short polling.
+- While Workers run, Lead uses one long event-driven wait rather than short polling.
 
 ## Super mode
 
@@ -37,7 +39,7 @@ disable super mode
 关闭爆种模式
 ```
 
-At any concurrency, Sol still owns file boundaries, dependency order, actual-diff inspection, required checks, and final acceptance.
+At any concurrency, Lead still owns file boundaries, dependency order, actual-diff inspection, required checks, and final acceptance.
 
 ## 1M context
 
@@ -67,7 +69,7 @@ When a subagent returns this exact capacity message, the plugin continues once i
 Selected model is at capacity. Please try a different model.
 ```
 
-After a second Luna capacity failure, Sol sends the same frozen packet to `sol_medium_worker` when Sol Medium can reliably finish it, without redoing completed work; otherwise the current Sol takes over. Other second capacity failures also return to Sol. Capability, scope, and quality failures are never treated as capacity failures or passed through a mechanical model ladder. Current Codex Hooks cannot resume a root-controller capacity notification, so the plugin promises subagent continuation only.
+After a second Luna capacity failure, Lead sends the same frozen packet to `sol_medium_worker` when Sol Medium can reliably finish it, without redoing completed work; otherwise the current Lead takes over. Other second capacity failures also return to Lead. Capability, scope, and quality failures are never treated as capacity failures or passed through a mechanical model ladder. Current Codex Hooks cannot resume a root-controller capacity notification, so the plugin promises subagent continuation only.
 
 ## Install and upgrade
 

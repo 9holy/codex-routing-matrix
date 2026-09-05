@@ -20,7 +20,7 @@ for (const text of [
   'deep reasoning alone never selects it',
   'Use Radar once at most per root task',
   'Freeze each route',
-  'Sol MUST inspect every Worker result or diff',
+  'Lead MUST inspect every Worker result or diff',
   'Preserve the root model and reasoning effort',
   'For homogeneous batches, verify one unit, fill host capacity, and replace completed Workers',
   'Use one blocking wait; never poll',

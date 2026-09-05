@@ -1,6 +1,6 @@
 {
   "name": "codex-routing-matrix",
-  "version": "0.8.4+codex.20260817165411",
+  "version": "0.8.5+codex.20260905091415",
   "description": "Quality-first multi-model routing and review guardrails for Codex.",
   "author": {
     "name": "Codex Routing Matrix contributors"
@@ -16,7 +16,7 @@
   "interface": {
     "displayName": "Codex \u8def\u7531\u77e9\u9635",
     "shortDescription": "Quality-first routing for Codex subagents.",
-    "longDescription": "Use Sol to plan and verify, Luna Max for low-judgment execution, Sol Medium for bounded judgment, and Terra only with a clear task-specific advantage.",
+    "longDescription": "Use Astra or Sol to plan and verify, Luna Max for reliable low-judgment execution, Sol Medium when Luna is unsuitable or unavailable, and Terra only with a clear task-specific advantage.",
     "developerName": "Codex Routing Matrix contributors",
     "category": "Developer Tools",
     "capabilities": [

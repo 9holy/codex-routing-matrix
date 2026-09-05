@@ -15,7 +15,7 @@ routing = (ROOT / "skills" / "codex-quality-routing-team" / "SKILL.md").read_tex
 
 base_version = manifest["version"].partition("+codex.")[0]
 assert manifest["name"] == "codex-routing-matrix"
-assert base_version == policy["policyVersion"] == "0.8.4"
+assert base_version == policy["policyVersion"] == "0.8.5"
 assert policy["schemaVersion"] == 9
 assert set(policy) == {
     "schemaVersion", "policyVersion", "toolNames", "workPacket",
@@ -70,7 +70,7 @@ assert "Never poll `list_agents` or repeat short waits" in routing
 assert "two or three" not in rule and "never exceed three" not in rule
 assert "[CQO_WORK_PACKET_V1]" not in rule
 assert "[CQO_WORK_PACKET_V1]" in routing
-assert "fallback: current Sol; preserve completed work" in routing
+assert "fallback: current Lead; preserve completed work" in routing
 assert "do not run it again" in routing
 assert "sole semantic routing rule" in maintenance
 for model_path in [

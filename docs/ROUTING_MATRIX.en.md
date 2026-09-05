@@ -1,18 +1,20 @@
 # Routing Matrix
 
+Lead means the current Astra or Sol controller. If Luna is unsupported or access is denied, Lead sends the unchanged work packet and progress to capable Sol Medium; capacity errors retry Luna once first. Quality failures return to Lead for reassessment.
+
 ## Core rule
 
-The current `gpt-5.6-sol` is the sole controller for understanding, decomposition, delegation, integration, acceptance, and fallback. The plugin preserves the Sol reasoning effort selected when the task starts and does not switch the root effort during a running task.
+The current `gpt-6-astra` / `gpt-5.6-sol` is the sole controller for understanding, decomposition, delegation, integration, acceptance, and fallback. The plugin preserves the controller reasoning effort selected when the task starts and does not switch the root effort during a running task.
 
 Choose routes in this order:
 
-1. Keep short or tightly coupled work on the current Sol.
+1. Keep short or tightly coupled work on the current Lead.
 2. Use Luna Max directly for low-judgment, mechanically verifiable units it can reliably complete. Do not upgrade an eligible Luna unit to a more expensive route.
 3. When Luna does not fit, use Sol Medium for bounded, moderate-judgment, independently verifiable work when delegation has net value.
-4. Keep coupled, sequential, or delegation-negative work on the current Sol.
-5. Use Terra only for a clear task-specific advantage over capable Sol routes, at the lowest reliable effort.
+4. Keep coupled, sequential, or delegation-negative work on the current Lead.
+5. Use Terra only for a clear task-specific advantage over capable Lead routes, at the lowest reliable effort.
 6. Add one read-only Sol Reviewer when a critical high-risk change needs independent review.
-7. The current Sol inspects actual changes, reruns necessary checks, and makes the final decision.
+7. The current Lead inspects actual changes, reruns necessary checks, and makes the final decision.
 
 ## Controller efforts
 
@@ -39,7 +41,7 @@ Workers stay inside packet scope and make no unrelated changes. Workers do not d
 
 - The quality bar first determines which routes are reliable. Price is compared only among qualified routes.
 - When Luna qualifies, select it directly without reading external benchmark data.
-- If several Sol or Terra routes remain genuinely capable and unresolved, read the local Radar summary at most once per root task. When the IQ gap is below 3, keep the warm/original agent before comparing estimated total cost.
+- If several Lead or Terra routes remain genuinely capable and unresolved, read the local Radar summary at most once per root task. When the IQ gap is below 3, keep the warm/original agent before comparing estimated total cost.
 - Freeze the selected route. Do not switch for a small price difference; reconsider only when the unit, boundary, availability, or result changes.
 - Terra is not a fixed escalation tier, and deep reasoning alone does not select Terra.
 
@@ -58,8 +60,8 @@ terra_worker: agent_type + reasoning_effort(xhigh|max|ultra) + task_name(terra_<
 sol_reviewer: agent_type + task_name(sol_reviewer_xhigh__unit) + fork_turns
 ```
 
-Do not pass `model` to named agents. Default to `fork_turns:"none"`; use a positive integer string only when a small amount of inherited history is necessary. Every packet states the goal, scope and ownership, observable acceptance checks, and fallback to the current Sol while preserving completed work.
+Do not pass `model` to named agents. Default to `fork_turns:"none"`; use a positive integer string only when a small amount of inherited history is necessary. Every packet states the goal, scope and ownership, observable acceptance checks, and fallback to the current Lead while preserving completed work.
 
 ## Capacity recovery
 
-On the exact selected-model-capacity message, continue the same subagent once in the same context. After a second Luna capacity failure, Sol sends the same frozen packet to `sol_medium_worker` when Sol Medium can reliably finish it; otherwise the current Sol takes over. Other second capacity failures return to Sol. Never restart the whole task, redo completed work, or treat capability and quality failures as capacity errors. The current Hook covers `SubagentStop` only and cannot resume a root-controller capacity notification.
+On the exact selected-model-capacity message, continue the same subagent once in the same context. After a second Luna capacity failure, Lead sends the same frozen packet to `sol_medium_worker` when Sol Medium can reliably finish it; otherwise the current Lead takes over. Other second capacity failures return to Lead. Never restart the whole task, redo completed work, or treat capability and quality failures as capacity errors. The current Hook covers `SubagentStop` only and cannot resume a root-controller capacity notification.

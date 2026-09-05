@@ -9,6 +9,10 @@ const repoRoot = path.resolve(root, '..', '..');
 const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
 const rule = read('references/ROUTING_MATRIX.md');
 const skill = read('skills/codex-quality-routing-team/SKILL.md');
+assert.match(rule, /`gpt-6-astra` or `gpt-5.6-sol` root/);
+assert.match(skill, /`gpt-6-astra` or `gpt-5.6-sol` root/);
+assert.match(rule, /unsupported, access denied, or capacity fails twice/);
+assert.match(rule, /unchanged packet and progress to capable `sol_medium_worker`/);
 
 for (const required of [
   'MUST choose `luna_worker`',
@@ -34,14 +38,14 @@ assert.ok(rule.indexOf('MUST choose `luna_worker`') < rule.indexOf('When Luna is
 assert.match(rule, /All named profiles may run as subagents/);
 assert.match(rule, /In normal mode, Workers do not delegate/);
 assert.match(rule, /Super mode, a Worker may delegate only when the packet explicitly authorizes it at `d1-d3`/);
-assert.doesNotMatch(rule, /The only Sol subagents are/);
+assert.doesNotMatch(rule, /The only Lead subagents are/);
 for (const field of ['allowed paths and single-writer owner', 'dependencies', 'acceptance', 'integration order']) {
   assert.match(skill, new RegExp(field));
 }
 assert.match(skill, /run `node \.\.\/\.\.\/scripts\/radar-routing-evidence\.cjs` once/);
 assert.match(skill, /do not run it again/);
 assert.match(skill, /Freeze the selected route/);
-assert.match(skill, /fallback: current Sol; preserve completed work/);
+assert.match(skill, /fallback: current Lead; preserve completed work/);
 
 const docsRoot = path.join(repoRoot, 'docs');
 const docPaths = [
@@ -55,7 +59,7 @@ if (docPaths.every((file) => fs.existsSync(file))) {
   for (const document of [readme, matrix, guide]) {
     assert.match(document, /Luna/);
     assert.match(document, /Terra/);
-    assert.match(document, /Sol/);
+    assert.match(document, /Lead/);
     for (const conflict of [
       /Luna 不适用时.{0,12}直接(?:使用|选择|下派) Terra/,
       /Luna 不适用.{0,12}必须(?:使用|选择|下派) Terra/,

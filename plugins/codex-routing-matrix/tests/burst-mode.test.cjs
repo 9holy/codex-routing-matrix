@@ -31,7 +31,7 @@ try {
   assert.match(invoke('a', 'disable super mode'), /Return to normal routing/);
   assert.match(invoke('b', 'enable super mode'), /CQO_BURST_MODE:ON/);
   assert.match(invoke('b', '关闭爆种模式'), /CQO_BURST_MODE:OFF/);
-  assert.match(invoke('b', '关闭爆种模式'), /current Sol handles the remainder and final review/);
+  assert.match(invoke('b', '关闭爆种模式'), /current Lead handles the remainder and final review/);
   assert.match(invoke('a', '开启1M上下文'), /CQO_CONTEXT_WINDOW:ON/);
   assert.match(invoke('a', '开启1M上下文'), /Restart Codex and reopen this task/);
   const enabledConfig = fs.readFileSync(configPath, 'utf8');

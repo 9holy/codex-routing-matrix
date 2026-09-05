@@ -65,7 +65,7 @@ async function main() {
   writeState(state);
   const modeContext = enabledCommand
     ? '[CQO_BURST_MODE:ON] Super mode is enabled for this session.'
-    : '[CQO_BURST_MODE:OFF] Super mode is disabled. Return to normal routing: do not dispatch burst-depth work; the current Sol handles the remainder and final review.';
+    : '[CQO_BURST_MODE:OFF] Super mode is disabled. Return to normal routing: do not dispatch burst-depth work; the current Lead handles the remainder and final review.';
   process.stdout.write(`${JSON.stringify({ hookSpecificOutput: {
     hookEventName: 'UserPromptSubmit',
     additionalContext: modeContext,
