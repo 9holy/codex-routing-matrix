@@ -53,14 +53,14 @@ function expectDeny(name, input, options) {
 
 function label(agentType, effort) {
   if (agentType === 'luna_worker') return 'luna_max';
-  if (agentType === 'sol_medium_worker') return 'sol_medium';
-  if (agentType === 'terra_worker') return `terra_${effort}`;
+  if (agentType === 'sol_medium_worker') return `sol_${effort}`;
+  if (agentType === 'astra_low_worker') return 'astra_low';
   return 'sol_reviewer_xhigh';
 }
 
 function workerInput(agentType, overrides = {}) {
   const effort = overrides.reasoning_effort ?? (
-    agentType === 'terra_worker' ? 'xhigh' : agentType === 'luna_worker' ? 'max' :
+    agentType === 'luna_worker' ? 'max' :
       agentType === 'sol_medium_worker' ? 'medium' : 'xhigh'
   );
   const input = {
@@ -68,11 +68,9 @@ function workerInput(agentType, overrides = {}) {
     fork_turns: 'none',
     task_name: `${label(agentType, effort)}__unit_${invocation + 1}`,
     message: 'gAAAA-host-encrypted-subagent-message',
+    ...(agentType === 'sol_medium_worker' ? { reasoning_effort: effort } : {}),
     ...overrides,
   };
-  if (agentType === 'terra_worker' && !Object.hasOwn(overrides, 'reasoning_effort')) {
-    input.reasoning_effort = effort;
-  }
   return input;
 }
 
@@ -81,13 +79,16 @@ try {
 
   expectAllow('luna-max', workerInput('luna_worker'));
   expectAllow('sol-medium', workerInput('sol_medium_worker'));
+  expectAllow('sol-high', workerInput('sol_medium_worker', { reasoning_effort: 'high' }));
+  expectDeny('sol-high-wrong-label', workerInput('sol_medium_worker', { reasoning_effort: 'high', task_name: 'sol_medium__wrong_effort' }));
+  expectAllow('sol-xhigh', workerInput('sol_medium_worker', { reasoning_effort: 'xhigh' }));
+  expectDeny('sol-missing-effort', workerInput('sol_medium_worker', { reasoning_effort: undefined }));
+  expectDeny('sol-medium-wrong-label', workerInput('sol_medium_worker', { task_name: 'sol_xhigh__wrong_effort' }));
+  expectDeny('sol-xhigh-wrong-label', workerInput('sol_medium_worker', { reasoning_effort: 'xhigh', task_name: 'sol_medium__wrong_effort' }));
+  expectAllow('astra-low', workerInput('astra_low_worker'));
+  expectDeny('astra-effort-override', workerInput('astra_low_worker', { reasoning_effort: 'medium' }));
+  expectDeny('astra-wrong-label', workerInput('astra_low_worker', { task_name: 'sol_medium__wrong_label' }));
   expectAllow('reviewer-xhigh', workerInput('sol_reviewer'));
-  for (const effort of ['xhigh', 'max', 'ultra']) {
-    expectAllow(`terra-${effort}`, workerInput('terra_worker', {
-      reasoning_effort: effort,
-      task_name: `terra_${effort}__unit_${effort}`,
-    }));
-  }
   expectAllow('positive-fork', workerInput('luna_worker', { fork_turns: '2' }));
   for (const depth of [1, 2, 3, 4]) {
     expectAllow(`burst-d${depth}`, workerInput('luna_worker', {
@@ -102,18 +103,19 @@ try {
     agent_type: 'default', fork_turns: 'all', task_name: 'other_task', message: 'other skill',
   });
   expectAllow('unrelated-bare-model', {
-    model: 'gpt-5.5', reasoning_effort: 'high', fork_turns: '1', message: 'other skill',
+    model: 'gpt-6-astra', reasoning_effort: 'high', fork_turns: '1', message: 'other skill',
   });
   expectAllow('unrelated-tool', workerInput('luna_worker'), { toolName: 'read_file' });
 
   expectDeny('missing-message', workerInput('luna_worker', { message: '' }));
   expectDeny('missing-fork', workerInput('luna_worker', { fork_turns: undefined }));
   expectDeny('fork-all', workerInput('luna_worker', { fork_turns: 'all' }));
-  expectDeny('model-override', workerInput('luna_worker', { model: 'gpt-5.6-luna' }));
+  expectDeny('model-override', workerInput('luna_worker', { model: 'gpt-6-luna' }));
   expectDeny('luna-effort-override', workerInput('luna_worker', { reasoning_effort: 'xhigh' }));
-  expectDeny('sol-medium-effort-override', workerInput('sol_medium_worker', { reasoning_effort: 'high' }));
+  for (const effort of ['low', 'max', '', null]) {
+    expectDeny(`sol-invalid-effort-${effort}`, workerInput('sol_medium_worker', { reasoning_effort: effort }));
+  }
   expectDeny('reviewer-effort-override', workerInput('sol_reviewer', { reasoning_effort: 'max' }));
-  expectDeny('terra-high', workerInput('terra_worker', { reasoning_effort: 'high' }));
   expectDeny('bad-task-name', workerInput('luna_worker', { task_name: 'plain_name' }));
   expectDeny('burst-missing-depth', workerInput('luna_worker', {
     task_name: 'luna_max__d2_unit', message: 'burst_delegate=yes',
@@ -127,8 +129,8 @@ try {
   expectDeny('d4-delegates', workerInput('luna_worker', {
     task_name: 'luna_max__d4_unit', message: 'burst_depth=d4\nburst_delegate=yes\n调用 spawn_agent',
   }));
-  expectDeny('wrong-task-route', workerInput('terra_worker', {
-    reasoning_effort: 'ultra', task_name: 'terra_max__wrong_effort',
+  expectDeny('wrong-task-route', workerInput('sol_medium_worker', {
+    task_name: 'luna_max__wrong_route',
   }));
 
   const duplicate = workerInput('luna_worker', { task_name: 'luna_max__repeatable_unit' });
@@ -138,8 +140,14 @@ try {
   fs.rmSync(path.join(agentsDir, 'luna-worker.toml'));
   expectDeny('missing-profile', workerInput('luna_worker'));
   installProfiles();
-  fs.appendFileSync(path.join(agentsDir, 'terra-worker.toml'), '\nmodel_reasoning_effort = "max"\n');
-  expectDeny('terra-pinned-effort', workerInput('terra_worker', { reasoning_effort: 'max' }));
+  const lunaPath = path.join(agentsDir, 'luna-worker.toml');
+  fs.writeFileSync(lunaPath, fs.readFileSync(lunaPath, 'utf8').replace('gpt-6-luna', 'gpt-5.6-luna'));
+  expectDeny('old-generation-profile', workerInput('luna_worker'));
+  installProfiles();
+
+  const solPath = path.join(agentsDir, 'sol-medium-worker.toml');
+  fs.appendFileSync(solPath, '\nmodel_reasoning_effort = "medium"\n');
+  expectDeny('sol-pinned-profile', workerInput('sol_medium_worker'));
   installProfiles();
 
   fs.writeFileSync(path.join(codexHome, 'AGENTS.md'), '## User Project Rule\n');

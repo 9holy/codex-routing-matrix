@@ -1,20 +1,21 @@
 # 操作指南
 
-Lead 指当前 Astra 或 Sol 主控。Luna 明确不支持或无访问权限时，主控将原工作包和进度转给能可靠胜任的 Sol Medium；容量错误先原地重试一次。质量失败由主控重新判断。
+Lead 指当前 Astra 或 Sol 主控。Luna 明确不支持或无访问权限时，主控将原工作包和进度转给能可靠完成的 Sol 路线，并选择最低可靠档位；容量错误先由原代理在原上下文重试一次。质量失败由主控重新判断。
 
 ## 一次任务怎样运行
 
-当前 `gpt-6-astra` / `gpt-5.6-sol` 始终是主控。插件不会替换已经启动任务的根模型或推理档位，而是给 Lead 一套简洁的分工规则和四个具名代理。
+当前 `gpt-6-astra` / `gpt-6-sol` 始终是主控。插件不会替换已经启动任务的根模型或推理档位，而是给 Lead 一套简洁的分工规则和四个具名代理；Sol worker 常规使用 High，轻量边界工作可用 Medium，复杂独立工作可用 XHigh。
 
+已有能胜任且有相关上下文的代理优先继续处理；只有需要新路线的单元才进入下面的判断。
 1. Lead 先判断任务是否值得拆分。短任务、强耦合工作和顺序执行更合适的工作由 Lead 直接完成。
 2. 拆分前，Lead 写清每个单元的目标、范围、唯一文件写入者、依赖、验收标准和集成顺序。
-3. 决策已经冻结、判断负荷低、结果可机械验证且 Luna 能可靠完成的单元，优先交给 Luna Max。
-4. Luna 不适合时，边界清楚、需要正常判断、适合独立下派的单元优先使用 Sol Medium。
-5. Terra 只有在具体任务上对质量、上下文处理、并行收益或总成本有明确优势时才使用。深推理本身不是选择 Terra 的理由。
+3. 目标明确、上下文充分且 Luna Max 能可靠完成的边界工作可交给 Luna，包括本地分析、实现、调试和测试；不把 Luna 当试错路线，也不依赖 Lead 事后救回不合适的结果。
+4. `sol_medium_worker` 保留兼容的代理名；常规独立工作默认使用 High，边界清楚的轻量工作使用 Medium，复杂独立工作可选择 XHigh。
+5. Astra Low 仅在预期相对合适的 Sol 档位或当前 Lead 有明确质量或总成本收益时使用；不预设它强于 Sol XHigh，也不走自动升级梯子。
 6. 架构、安全、公共接口、生产数据、不可逆操作、模糊需求和原因尚未查清的问题留给当前 Lead 决定。
 7. 所有 Worker 结果最终都回到 Lead。Lead 检查实际差异、按集成顺序重跑必要验证，然后接受、退回一次局部修正，或自己接管。
 
-这套流程把质量裁决留在 Lead，同时把真正适合独立执行的工作交给成本更合适的模型。路由选择在当前根任务内冻结，只有工作单元、边界、可用性或结果发生变化时才重新判断。
+这套流程把质量裁决留在 Lead，同时把真正适合独立执行的工作交给成本更合适的模型。优先复用有相关上下文的可靠代理；比较执行、缓存、交接、复审和返工成本，绝不假设一定命中缓存。路由选择在当前根任务内冻结，只有工作单元、边界、可用性或结果发生变化时才重新判断。
 
 ## 普通模式
 
@@ -23,7 +24,7 @@ Lead 指当前 Astra 或 Sol 主控。Luna 明确不支持或无访问权限时�
 - 简单工作不创建子代理。
 - 非短任务只有在下派或并行确实有净收益时才创建 Worker，默认从一个开始。
 - 互不依赖、不会同时写同一文件的单元才并行。
-- 大量同类工作先验收一个代表性单元，再按宿主实际容量逐步补充 Worker。
+- 大量同类工作先验收一个代表性单元，再按有益工作逐步补充 Worker，不为填满槽位增加并发。
 - Worker 运行时使用一次长等待，由完成事件提前唤醒，不做短间隔轮询。
 
 ## Super mode
@@ -69,7 +70,7 @@ model_auto_compact_token_limit = 900000
 Selected model is at capacity. Please try a different model.
 ```
 
-Luna 第二次仍因容量失败时，如果 Sol Medium 能可靠完成同一工作包，Lead 会把原工作包转给 `sol_medium_worker`，不重做已经完成的工作；否则由当前 Lead 接管。其他子代理第二次容量失败也交回 Lead。能力不足、越界或质量问题不会伪装成容量问题，也不会沿机械模型梯子逐级尝试。当前 Codex Hook 不能恢复主控自身的容量通知，因此插件只承诺子代理续交。
+Luna 第二次仍因容量失败时，如果 Sol 能以最低可靠档位完成同一工作包，Lead 会把原工作包转给 `sol_medium_worker`，不重做已经完成的工作；否则由当前 Lead 接管。其他子代理第二次容量失败也交回 Lead。能力不足、越界或质量问题不会伪装成容量问题，也不会沿机械模型梯子逐级尝试。当前 Codex Hook 不能恢复主控自身的容量通知，因此插件只承诺子代理续交。
 
 ## 安装与升级
 
@@ -92,7 +93,7 @@ macOS、Linux 桌面或 Linux 服务器上的 Codex CLI 直接运行：
 node "$HOME/.codex/.tmp/marketplaces/codex-routing-matrix/plugins/codex-routing-matrix/scripts/portable-setup.cjs" install
 ```
 
-初始化会安装 Luna、Sol Medium、Terra 和 Sol Reviewer 四个具名代理，维护无编号的 `Codex Routing Matrix`，并在首次安装时把英文 `Meta Rule - Conflict Resolution` 和 `Implementation` 放到 `AGENTS.md` 顶部。后两条不是守护内容，以后不会被安装器自动恢复或覆盖。
+初始化会安装 Luna、Sol（Medium/High/XHigh）、Astra Low 和 Sol Reviewer 四个具名代理，维护无编号的 `Codex Routing Matrix`，并在首次安装时把英文 `Meta Rule - Conflict Resolution` 和 `Implementation` 放到 `AGENTS.md` 顶部。后两条不是守护内容，以后不会被安装器自动恢复或覆盖。
 
 升级命令：
 

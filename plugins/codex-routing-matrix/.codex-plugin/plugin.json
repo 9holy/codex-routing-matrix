@@ -1,6 +1,6 @@
 {
   "name": "codex-routing-matrix",
-  "version": "0.8.5+codex.20260905091415",
+  "version": "0.9.0+codex.20260922192044",
   "description": "Quality-first multi-model routing and review guardrails for Codex.",
   "author": {
     "name": "Codex Routing Matrix contributors"
@@ -16,7 +16,7 @@
   "interface": {
     "displayName": "Codex \u8def\u7531\u77e9\u9635",
     "shortDescription": "Quality-first routing for Codex subagents.",
-    "longDescription": "Use Astra or Sol to plan and verify, Luna Max for reliable low-judgment execution, Sol Medium when Luna is unsuitable or unavailable, and Terra only with a clear task-specific advantage.",
+    "longDescription": "GPT-6 Astra or Sol leads. Luna Max handles suitable execution and focused reasoning; Sol defaults to High, with Medium for lighter work and XHigh for complex work. Reuse capable context and choose Astra Low only for a clear quality or total-cost benefit.",
     "developerName": "Codex Routing Matrix contributors",
     "category": "Developer Tools",
     "capabilities": [

@@ -304,11 +304,8 @@ $policy = Get-Content -LiteralPath (Join-Path $pluginRoot 'routing-policy.json')
 $agentsDir = Join-Path $CodexHome 'agents'
 $statePath = Join-Path $CodexHome '.codex-routing-matrix.install-state.json'
 $legacyStatePath = Join-Path $CodexHome '.codex-quality-orchestrator.install-state.json'
-if (-not (Test-Path -LiteralPath $statePath -PathType Leaf) -and
-    (Test-Path -LiteralPath $legacyStatePath -PathType Leaf)) {
-  Copy-Item -LiteralPath $legacyStatePath -Destination $statePath -Force -ErrorAction Stop
-}
-$firstInstall = -not (Test-Path -LiteralPath $statePath -PathType Leaf)
+$stateSource = if (Test-Path -LiteralPath $statePath -PathType Leaf) { $statePath } else { $legacyStatePath }
+$firstInstall = -not (Test-Path -LiteralPath $stateSource -PathType Leaf)
 
 New-Item -ItemType Directory -Path $CodexHome -Force | Out-Null
 New-Item -ItemType Directory -Path $agentsDir -Force | Out-Null
@@ -323,49 +320,35 @@ try {
 
 $results = @()
 try {
-  $stateProfiles = Read-InstallState $statePath
-  Convert-StateBackupsToNonLoadable $CodexHome $agentsDir $statePath $stateProfiles
-
+  $stateProfiles = Read-InstallState $stateSource
+  $retiredActions = @()
+  $retiredConflicts = @()
   foreach ($retired in @($policy.retiredProfiles)) {
     $fileName = [string]$retired.profileFile
     $target = Join-Path $agentsDir $fileName
     if (-not $stateProfiles.ContainsKey($fileName)) {
       if (Test-Path -LiteralPath $target -PathType Leaf) {
-        $results += [pscustomobject]@{ Agent=$retired.agentType; Status='retired-preserved-external'; Ownership='external'; Backup=$null }
+        $retiredConflicts += "$target`: retired profile is external"
       }
       continue
     }
 
     $entry = $stateProfiles[$fileName]
     if (-not (Test-Path -LiteralPath $target -PathType Leaf)) {
-      $stateProfiles.Remove($fileName)
-      Write-InstallState $statePath $stateProfiles
-      $results += [pscustomobject]@{ Agent=$retired.agentType; Status='retired-missing'; Ownership=$null; Backup=$null }
+      $retiredActions += [pscustomobject]@{ Agent=$retired.agentType; File=$fileName; Target=$target; Exists=$false }
       continue
     }
     $targetHash = (Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash.ToLowerInvariant()
-    if ($targetHash -cne [string]$retired.templateSha256) {
-      $stateProfiles.Remove($fileName)
-      Write-InstallState $statePath $stateProfiles
-      $results += [pscustomobject]@{ Agent=$retired.agentType; Status='retired-preserved-modified'; Ownership='external'; Backup=$null }
+    $knownHashes = @([string]$retired.templateSha256)
+    if ($retired.PSObject.Properties.Name -contains 'previousTemplateSha256') {
+      $knownHashes += @($retired.previousTemplateSha256)
+    }
+    if ($knownHashes -notcontains $targetHash) {
+      $retiredConflicts += "$target`: retired profile is modified"
       continue
     }
 
-    $backup = New-ProfileBackup $target $agentsDir
-    if ($entry.ownership -eq 'replaced') {
-      $restorePath = Resolve-StateBackupPath $CodexHome $agentsDir $entry.backupFile $fileName
-      if (-not (Test-Path -LiteralPath $restorePath -PathType Leaf)) {
-        throw "Original profile backup is missing: $restorePath"
-      }
-      Copy-Item -LiteralPath $restorePath -Destination $target -Force -ErrorAction Stop
-      $status = 'retired-restored-original'
-    } else {
-      Remove-Item -LiteralPath $target -Force -ErrorAction Stop
-      $status = 'retired-removed'
-    }
-    $stateProfiles.Remove($fileName)
-    Write-InstallState $statePath $stateProfiles
-    $results += [pscustomobject]@{ Agent=$retired.agentType; Status=$status; Ownership=$null; Backup=$backup }
+    $retiredActions += [pscustomobject]@{ Agent=$retired.agentType; File=$fileName; Target=$target; Exists=$true }
   }
 
   $actions = @()
@@ -397,6 +380,12 @@ try {
       $actions += [pscustomobject]@{ Agent=$agentType; Source=$source; Target=$target; Action='refresh'; Reason='plugin-owned profile content changed' }
       continue
     }
+    if ($stateProfiles.ContainsKey($fileName) -and
+        $config.PSObject.Properties.Name -contains 'previousTemplateSha256' -and
+        @($config.previousTemplateSha256) -contains (Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash.ToLowerInvariant()) {
+      $actions += [pscustomobject]@{ Agent=$agentType; Source=$source; Target=$target; Action='refresh'; Reason='known plugin-owned previous template' }
+      continue
+    }
     if ($null -eq $reason -and -not $Force) {
       $actions += [pscustomobject]@{ Agent=$agentType; Source=$source; Target=$target; Action='keep'; Reason='compatible external profile' }
       continue
@@ -406,9 +395,35 @@ try {
   }
 
   $conflicts = @($actions | Where-Object { $_.Action -eq 'replace' })
+  if ($retiredConflicts.Count -gt 0) {
+    throw ('Retired agent profiles conflict. No profile, state, or AGENTS files were changed.' + [Environment]::NewLine + ($retiredConflicts -join [Environment]::NewLine))
+  }
   if ($conflicts.Count -gt 0 -and -not $Force) {
     $details = ($conflicts | ForEach-Object { "$($_.Target): $($_.Reason)" }) -join [Environment]::NewLine
     throw "Existing agent profiles conflict with the plugin contract. No files were changed. Use -Force to back up and replace them.`n$details"
+  }
+
+  foreach ($fileName in @($stateProfiles.Keys)) {
+    $entry = $stateProfiles[$fileName]
+    if ($entry.ownership -ne 'replaced') { continue }
+    $restorePath = Resolve-StateBackupPath $CodexHome $agentsDir $entry.backupFile $fileName
+    if (-not (Test-Path -LiteralPath $restorePath -PathType Leaf)) {
+      throw "Original profile backup is missing: $restorePath"
+    }
+  }
+  Convert-StateBackupsToNonLoadable $CodexHome $agentsDir $statePath $stateProfiles
+  if ($stateSource -eq $legacyStatePath -and -not $firstInstall) { Write-InstallState $statePath $stateProfiles }
+  foreach ($action in $retiredActions) {
+    $entry = $stateProfiles[$action.File]
+    $backup = $null
+    if ($action.Exists) {
+      $backup = New-ProfileBackup $action.Target $agentsDir
+      Remove-Item -LiteralPath $action.Target -Force -ErrorAction Stop
+    }
+    # Preserve replaced profiles' original restoration record until uninstall.
+    if ($entry.ownership -eq 'created') { $stateProfiles.Remove($action.File) }
+    Write-InstallState $statePath $stateProfiles
+    $results += [pscustomobject]@{ Agent=$action.Agent; Status='retired'; Ownership=$entry.ownership; Backup=$backup }
   }
 
   foreach ($action in $actions) {

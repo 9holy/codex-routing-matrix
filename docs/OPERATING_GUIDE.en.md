@@ -1,20 +1,21 @@
 # Operating Guide
 
-Lead means the current Astra or Sol controller. If Luna is unsupported or access is denied, Lead sends the unchanged work packet and progress to capable Sol Medium; capacity errors retry Luna once first. Quality failures return to Lead for reassessment.
+Lead means the current Astra or Sol controller. If Luna is unsupported or access is denied, Lead sends the unchanged work packet and progress to a capable Sol route at its lowest reliable effort; capacity errors retry once in the original agent context first. Quality failures return to Lead for reassessment.
 
 ## How one task runs
 
-The current `gpt-6-astra` / `gpt-5.6-sol` always remains the controller. The plugin does not replace the root model or reasoning effort of a running task. It gives Lead a concise routing rule and four named agent profiles.
+The current `gpt-6-astra` / `gpt-6-sol` always remains the controller. The plugin does not replace the root model or reasoning effort of a running task. It gives Lead a concise routing rule and four named agent profiles; the Sol worker uses High by default, with Medium for bounded light reasoning and XHigh for complex independent work.
 
+Reuse a capable agent with relevant context before choosing a fresh route; only units that need a new route enter the following checks.
 1. Lead first decides whether decomposition has net value. It handles short, tightly coupled, or naturally sequential work directly.
 2. Before delegation, Lead freezes each unit's goal, scope, single-writer ownership, dependencies, acceptance checks, and integration order.
-3. Luna Max is the first choice for frozen, low-judgment, mechanically verifiable work it can reliably complete.
-4. When Luna does not fit, Sol Medium is preferred for bounded, independently verifiable work that needs normal judgment.
-5. Terra is used only for a clear task-specific advantage in quality, context handling, parallel value, or total cost. Deep reasoning alone does not select Terra.
+3. Luna Max can handle bounded work with a clear goal and sufficient context that it can reliably complete, including local analysis, implementation, debugging, and tests. Never use it as a trial route or rely on Lead to rescue a poor fit.
+4. Keep the compatible `sol_medium_worker` name; select High by default for routine independent work, Medium for bounded light-reasoning work, or XHigh for complex independent work.
+5. Select Astra Low only for a clear predicted quality or total-cost benefit over the suitable Sol effort or current Lead; do not presume it is stronger than Sol XHigh, and never make it an automatic escalation step.
 6. Architecture, security, public interfaces, production data, irreversible operations, unclear requirements, and undiagnosed causes stay with the current Lead.
 7. Every Worker result returns to Lead. Lead inspects the actual diff, reruns necessary checks in integration order, then accepts it, returns one local defect once, or takes over.
 
-This keeps final quality judgment with Lead while assigning suitable execution to a lower-cost capable route. A route stays frozen within the task and is reconsidered only when the unit, boundary, availability, or result changes.
+This keeps final quality judgment with Lead while assigning suitable execution to a lower-cost capable route. Reuse relevant context and compare execution, cache, handoff, review, and rework costs; never assume a cache hit. Route selection stays frozen within the current root task and is reconsidered only when the unit, boundary, availability, or result changes.
 
 ## Normal mode
 
@@ -23,7 +24,7 @@ Normal mode is for everyday work:
 - Simple work creates no subagent.
 - Non-short work starts with one Worker only when delegation or parallelism has net value.
 - Only independent, write-safe units run in parallel.
-- Homogeneous batches verify one representative unit before filling real host capacity and replacing completed Workers.
+- Homogeneous batches verify one representative unit before adding only Workers with positive net benefit; do not fill slots for its own sake.
 - While Workers run, Lead uses one long event-driven wait rather than short polling.
 
 ## Super mode
@@ -69,7 +70,7 @@ When a subagent returns this exact capacity message, the plugin continues once i
 Selected model is at capacity. Please try a different model.
 ```
 
-After a second Luna capacity failure, Lead sends the same frozen packet to `sol_medium_worker` when Sol Medium can reliably finish it, without redoing completed work; otherwise the current Lead takes over. Other second capacity failures also return to Lead. Capability, scope, and quality failures are never treated as capacity failures or passed through a mechanical model ladder. Current Codex Hooks cannot resume a root-controller capacity notification, so the plugin promises subagent continuation only.
+After a second Luna capacity failure, Lead sends the same frozen packet to `sol_medium_worker` at the lowest reliable Sol effort, without redoing completed work; otherwise the current Lead takes over. Other second capacity failures also return to Lead. Capability, scope, and quality failures are never treated as capacity failures or passed through a mechanical model ladder. Current Codex Hooks cannot resume a root-controller capacity notification, so the plugin promises subagent continuation only.
 
 ## Install and upgrade
 
@@ -92,7 +93,7 @@ On macOS, Linux desktops, or Linux servers running Codex CLI, use:
 node "$HOME/.codex/.tmp/marketplaces/codex-routing-matrix/plugins/codex-routing-matrix/scripts/portable-setup.cjs" install
 ```
 
-Setup installs the Luna, Sol Medium, Terra, and Sol Reviewer profiles, maintains the unnumbered `Codex Routing Matrix` section, and places one-time English `Meta Rule - Conflict Resolution` and `Implementation` defaults at the top of `AGENTS.md`. Those two defaults are not guarded and are never restored or overwritten by later installs.
+Setup installs the Luna, Sol (Medium/High/XHigh), Astra Low, and Sol Reviewer profiles, maintains the unnumbered `Codex Routing Matrix` section, and places one-time English `Meta Rule - Conflict Resolution` and `Implementation` defaults at the top of `AGENTS.md`. Those two defaults are not guarded and are never restored or overwritten by later installs.
 
 Upgrade commands:
 
@@ -133,7 +134,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$HOME\.codex\.tmp\marketpla
 
 The guard restores only plugin registration and already approved current Hooks. It preserves authentication, providers, endpoints, models, and unrelated settings.
 
-The configuration guard is currently Windows-only. Do not run `config-guard.ps1 -Mode Install` on macOS or Linux; core routing and all four Worker profiles remain supported.
+The configuration guard is currently Windows-only. Do not run `config-guard.ps1 -Mode Install` on macOS or Linux; core routing and all four agent profiles remain supported.
 
 ## Verify
 

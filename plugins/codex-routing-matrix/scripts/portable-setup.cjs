@@ -307,7 +307,7 @@ function install(codexHome, force) {
   const agentsDir = path.join(codexHome, 'agents');
   fs.mkdirSync(agentsDir, { recursive: true });
   const { profiles, source } = loadState(codexHome);
-  const { entries } = policyData();
+  const { entries, policy } = policyData();
   const firstInstall = source === null;
   const actions = inspectProfiles(codexHome, profiles, entries).map((item) => {
     if (!item.exists) return { ...item, action: 'install', reason: null };
@@ -317,18 +317,43 @@ function install(codexHome, force) {
     if (item.valid && item.ownership !== 'external') {
       return { ...item, action: 'refresh', reason: 'plugin-owned profile content changed' };
     }
+    const config = entries.find(([agent]) => agent === item.agent)[1];
+    if (item.ownership !== 'external' && (config.previousTemplateSha256 || []).includes(hashFile(path.join(agentsDir, item.file)))) {
+      return { ...item, action: 'refresh', reason: 'known plugin-owned previous template' };
+    }
     if (item.valid && !force) {
       return { ...item, action: 'keep', reason: 'compatible external profile' };
     }
     return { ...item, action: 'replace', reason: item.valid ? 'forced adoption of compatible external profile' : item.problem };
   });
   const conflicts = actions.filter((item) => item.action === 'replace');
+  const retiredActions = (policy.retiredProfiles || []).map((retired) => {
+    const target = path.join(agentsDir, retired.profileFile);
+    const exists = fs.existsSync(target);
+    const owned = profiles[retired.profileFile];
+    const knownHashes = [retired.templateSha256, ...(retired.previousTemplateSha256 || [])].map((hash) => hash.toLowerCase());
+    if (exists && (!owned || !knownHashes.includes(hashFile(target)))) {
+      conflicts.push({ agent: retired.agentType, file: retired.profileFile, reason: 'retired profile is external or modified' });
+      return null;
+    }
+    return { ...retired, target, exists, owned };
+  });
+  if (retiredActions.some((item) => item === null)) {
+    const error = new Error('Retired agent profiles conflict. No profile, state, or AGENTS files were changed.');
+    error.conflicts = conflicts.map(({ agent, file, reason }) => ({ agent, file, reason }));
+    throw error;
+  }
   if (conflicts.length && !force) {
     const error = new Error('Existing agent profiles conflict with the plugin contract. No profile, state, or AGENTS files were changed.');
     error.conflicts = conflicts.map(({ agent, file, reason }) => ({ agent, file, reason }));
     throw error;
   }
 
+  for (const [fileName, entry] of Object.entries(profiles)) {
+    if (entry.ownership !== 'replaced') continue;
+    const restore = resolveRestorePath(codexHome, agentsDir, entry.backupFile, fileName);
+    if (!fs.existsSync(restore)) throw new Error(`Original profile backup is missing: ${restore}`);
+  }
   normalizeBackups(codexHome, agentsDir, profiles);
   const currentStatePath = path.join(codexHome, stateName);
   const legacyStatePath = path.join(codexHome, legacyStateName);
@@ -336,6 +361,15 @@ function install(codexHome, force) {
     writeState(codexHome, profiles);
   }
   const results = [];
+  for (const item of retiredActions) {
+    if (!item.owned) continue;
+    const backup = item.exists ? backupProfile(item.target, agentsDir) : null;
+    if (item.exists) fs.rmSync(item.target);
+    // Replaced profiles retain their original restoration record until uninstall.
+    if (item.owned.ownership === 'created') delete profiles[item.profileFile];
+    writeState(codexHome, profiles);
+    results.push({ agent: item.agentType, status: 'retired', ownership: item.owned.ownership, backup: backup?.directory || null });
+  }
   for (const item of actions) {
     const target = path.join(agentsDir, item.file);
     const template = path.join(templateDir, item.file);

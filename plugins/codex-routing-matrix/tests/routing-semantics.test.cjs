@@ -9,17 +9,19 @@ const repoRoot = path.resolve(root, '..', '..');
 const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
 const rule = read('references/ROUTING_MATRIX.md');
 const skill = read('skills/codex-quality-routing-team/SKILL.md');
-assert.match(rule, /`gpt-6-astra` or `gpt-5.6-sol` root/);
-assert.match(skill, /`gpt-6-astra` or `gpt-5.6-sol` root/);
+assert.match(rule, /`gpt-6-astra` or `gpt-6-sol` root/);
+assert.match(skill, /`gpt-6-astra` or `gpt-6-sol` root/);
+for (const text of [rule, skill]) assert.doesNotMatch(text, /gpt-5(?:\.\d+|-[a-z])[\w.-]*/i);
 assert.match(rule, /unsupported, access denied, or capacity fails twice/);
 assert.match(rule, /unchanged packet and progress to capable `sol_medium_worker`/);
 
 for (const required of [
   'MUST choose `luna_worker`',
   'Never trial uncertain work on Luna',
-  'use `sol_medium_worker` for bounded, moderate-judgment',
-  'deep reasoning alone never selects it',
-  'clear task-specific quality, context, concurrency, or total-cost advantage',
+  'use `sol_medium_worker`',
+  'default to `high`; choose `medium` for clear, light-reasoning work or `xhigh` for complex independent work',
+  'Select `astra_low_worker` only for a clear quality or total-cost benefit',
+  'Choose upfront, not through an escalation ladder',
   'Use Radar once at most per root task',
   'Freeze each route',
   'Selected model is at capacity. Please try a different model.',
@@ -30,7 +32,6 @@ for (const required of [
 for (const forbidden of [
   /high-risk work is never short/i,
   /if Luna is unsuitable, dispatch/i,
-  /Luna (?:being )?unsuitable[^.]*must[^.]*Terra/i,
   /trial-dispatch uncertainty is allowed/i,
 ]) assert.doesNotMatch(rule, forbidden);
 
@@ -58,19 +59,14 @@ if (docPaths.every((file) => fs.existsSync(file))) {
   const [readme, matrix, guide, requirements] = docPaths.map((file) => fs.readFileSync(file, 'utf8'));
   for (const document of [readme, matrix, guide]) {
     assert.match(document, /Luna/);
-    assert.match(document, /Terra/);
+    assert.match(document, /Astra Low/);
+    assert.doesNotMatch(document, /gpt-5(?:\.\d+|-[a-z])[\w.-]*|terra_worker/i);
     assert.match(document, /Lead/);
-    for (const conflict of [
-      /Luna 不适用时.{0,12}直接(?:使用|选择|下派) Terra/,
-      /Luna 不适用.{0,12}必须(?:使用|选择|下派) Terra/,
-      /Luna 不适用时.{0,12}默认(?:使用|选择|下派)? Terra/,
-      /Luna 不适用自动触发 Terra/,
-    ]) assert.doesNotMatch(document, conflict);
   }
-  assert.match(readme, /常规独立判断工作优先 Sol Medium/);
-  assert.match(matrix, /适合独立下派的单元优先 Sol Medium/);
-  assert.match(guide, /适合独立下派的单元优先使用 Sol Medium/);
-  for (const document of [readme, matrix, guide]) assert.match(document, /深推理/);
+  for (const document of [readme, matrix, guide]) {
+    assert.match(document, /Sol/);
+    assert.match(document, /[Xx][Hh]igh/);
+  }
   assert.match(matrix, /路由确定后冻结/);
   assert.match(guide, /路由选择在当前根任务内冻结/);
   for (const id of [

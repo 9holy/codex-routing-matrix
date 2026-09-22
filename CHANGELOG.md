@@ -1,6 +1,21 @@
 # Changelog
 
-## Unreleased
+## 0.9.0 - 2026-09-23
+
+### GPT-6 routing
+
+- Include bounded analysis, implementation, debugging and tests in Luna Max's eligible work; select by reliable completion, not a mechanical-only restriction.
+- Default the existing Sol execution profile to High; retain Medium for clear light-reasoning work and XHigh for complex independent work. Select upfront, reuse capable context and avoid repeated model trials or duplicate implementation during review.
+- Upgrade Luna Max, Sol Worker and Sol Reviewer to GPT-6; retain Astra Low for work with a clear quality or total-cost benefit. Remove Terra from active routing.
+- Migrate unmodified plugin-owned GPT-5 profiles with recovery backups; preserve external or customized profiles and report installation conflicts.
+- Exclude GPT-5 entries from Radar evidence and cached summaries. Keep Super mode, capacity continuation, 1M context and configuration recovery.
+- Simplify routing instructions following the current OpenAI model and prompting guidance. Preserve the selected root effort and reuse capable agents before paying for another handoff.
+
+## 0.8.6 - 2026-09-08
+
+- Add optional Astra Low as the fifth named profile for bounded work with a predicted quality or total-cost benefit over Sol Medium or the current Lead; keep Luna Max first for fresh suitable work and Sol Medium as the main Worker route, without an automatic escalation ladder.
+- Make routing cache-aware: reuse capable agents with relevant context, compare handoff, cache, review, and rework costs, and never assume cache hits.
+- Keep Radar advisory and limited to one read per root task; size ordinary parallelism by benefit rather than slot filling while retaining Super mode's four depths and 25-child limit.
 
 ## 0.8.5 - 2026-09-05
 

@@ -9,7 +9,7 @@ function Assert-True {
 function Set-ConflictingLunaProfile {
   param([string]$Source, [string]$Target)
   $text = [IO.File]::ReadAllText($Source, [Text.UTF8Encoding]::new($false))
-  $text = $text.Replace('model = "gpt-5.6-luna"', 'model = "gpt-5.5"')
+  $text = $text.Replace('model = "gpt-6-luna"', 'model = "gpt-5.5"')
   [IO.File]::WriteAllText($Target, $text, [Text.UTF8Encoding]::new($false))
 }
 

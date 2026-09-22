@@ -1,26 +1,24 @@
 ---
 name: codex-quality-routing-team
-description: Apply quality-first Lead, Luna, and Terra routing to non-short work such as multi-step implementation, cross-file changes, located fixes, tests, scans, batch work, research, independent verification, or a bounded larger unit. Do not trigger for simple questions, status checks, or clear tiny edits. Use it to keep ambiguous, undiagnosed, architectural, security, public-interface, production-data, or irreversible decisions with Lead while delegating only safe bounded units.
+description: Delegate bounded implementation, research, scans or independent verification through the routing matrix. Skip simple questions and clear tiny edits.
 ---
 
 # Codex Routing Matrix Team
 
-1. Follow `Codex Routing Matrix` in context; if absent, read `../../references/ROUTING_MATRIX.md`. Lead is the current `gpt-6-astra` or `gpt-5.6-sol` root.
-2. For non-short work, compile a lightweight in-context plan before dispatch. Record each unit's goal, allowed paths and single-writer owner, dependencies, acceptance, and integration order. No separate or persistent planner by default. One substantial unit may be delegated when delegation has net benefit.
-3. Apply `Codex Routing Matrix` to every unit. Use Luna only for frozen, low-judgment, mechanically verifiable execution. Otherwise prefer `sol_medium_worker` for independently verifiable moderate-judgment work when delegation or parallelism pays; keep current Lead for coupled or sequential work. Use Terra only for a clear task-specific advantage, never merely because reasoning is deep. Before the first dispatch, read `../../routing-policy.json` once.
-4. At the first genuinely unresolved choice among multiple capable Sol/Terra routes, run `node ../../scripts/radar-routing-evidence.cjs` once. Keep that compact evidence in the current task and do not run it again. Freeze the selected route; reconsider only if the unit, boundary, availability, or result changes.
-5. For `spawn_agent`, always pass `agent_type`, `task_name`, and `fork_turns`. Default to `fork_turns:"none"`; use a positive integer string only when inherited context is necessary. Pass `reasoning_effort` for `terra_worker`. Never pass `model` for a named agent.
-6. Name tasks `<route>__<unit>`, for example `luna_max__update_tests`. Use this minimal nonempty work packet; put every allowed read/write path and ownership boundary in `scope`:
+1. Follow `Codex Routing Matrix` in context; if absent, read `../../references/ROUTING_MATRIX.md`. Lead is the current `gpt-6-astra` or `gpt-6-sol` root.
+2. Before dispatch, identify allowed paths and single-writer owner, dependencies, acceptance, and integration order. Include decisions and existing progress; do not make Workers redesign the task.
+3. Read `../../routing-policy.json` once before the first dispatch. Only for an unresolved Sol/Astra choice, run `node ../../scripts/radar-routing-evidence.cjs` once; retain the summary and do not run it again. Freeze the selected route until material facts change.
+4. For `spawn_agent`, always pass `agent_type`, `task_name`, and `fork_turns`. Default to `fork_turns:"none"`; inherit only necessary context. For `sol_medium_worker`, explicitly pass `reasoning_effort:"high"` by default, `"medium"` for clear light-reasoning work, or `"xhigh"` for complex independent work. Never pass `model` or override fixed efforts. If the host exposes an outdated profile, use a capable current agent or Lead and report that a new session is needed.
+5. Name tasks `<route>__<unit>`: `luna_max`, `sol_medium`, `sol_high`, `sol_xhigh`, `astra_low`, or `sol_reviewer_xhigh`. Sol's prefix must match the chosen effort. Send this packet:
 
 ```text
 [CQO_WORK_PACKET_V1]
 route: <model> / <effort>
 goal: <result>
-scope: <boundaries, paths, and ownership>
-acceptance: <executable or observable checks>
+scope: <paths, ownership, decisions, dependencies and progress>
+acceptance: <checks and expected result>
 fallback: current Lead; preserve completed work
 ```
 
-7. Default to one Worker. Parallelize independent, write-safe units only when beneficial. For homogeneous batches, verify one unit, then fill host capacity and replace completed Workers. Shared files have one writer. In normal mode, Workers do not delegate; in Super mode, only an explicitly authorized `d1-d3` Worker may delegate. `d4` and `sol_reviewer` never delegate.
-8. When Workers run and Lead has no useful independent work, call `wait_agent` once with `timeout_ms:3600000`; it wakes early on updates. Never poll `list_agents` or repeat short waits. Wait again after a timeout only while Workers remain.
-9. After completion, inspect the actual result or diff and rerun necessary checks in integration order. Return one clear local defect to the same Worker at most once. Capability, scope, or quality failure returns immediately to the current Lead; never route failures through a mechanical model ladder.
+6. Reuse the same agent for related follow-ups. When no useful independent work remains, use the host's blocking completion wait; obey runtime timeout limits. Never poll `list_agents` or repeat short waits.
+7. Inspect returned changes and evidence. Run only missing or invalidated checks and necessary integration checks. Do not replay completed work on another model.

@@ -24,15 +24,16 @@ const DEFAULT_CONFIG = Object.freeze({
 
 // This is deliberately duplicated here. The radar must not be able to add a route.
 const ROUTES = Object.freeze([
-  Object.freeze({ model: 'gpt-5.6-luna', effort: 'max' }),
-  Object.freeze({ model: 'gpt-5.6-sol', effort: 'medium' }),
-  Object.freeze({ model: 'gpt-5.6-sol', effort: 'high' }),
-  Object.freeze({ model: 'gpt-5.6-sol', effort: 'xhigh' }),
-  Object.freeze({ model: 'gpt-5.6-sol', effort: 'max' }),
-  Object.freeze({ model: 'gpt-5.6-sol', effort: 'ultra' }),
-  Object.freeze({ model: 'gpt-5.6-terra', effort: 'xhigh' }),
-  Object.freeze({ model: 'gpt-5.6-terra', effort: 'max' }),
-  Object.freeze({ model: 'gpt-5.6-terra', effort: 'ultra' }),
+  Object.freeze({ model: 'gpt-6-luna', effort: 'max' }),
+  Object.freeze({ model: 'gpt-6-sol', effort: 'medium' }),
+  Object.freeze({ model: 'gpt-6-sol', effort: 'high' }),
+  Object.freeze({ model: 'gpt-6-sol', effort: 'xhigh' }),
+  Object.freeze({ model: 'gpt-6-sol', effort: 'max' }),
+  Object.freeze({ model: 'gpt-6-astra', effort: 'low' }),
+  Object.freeze({ model: 'gpt-6-astra', effort: 'medium' }),
+  Object.freeze({ model: 'gpt-6-astra', effort: 'high' }),
+  Object.freeze({ model: 'gpt-6-astra', effort: 'xhigh' }),
+  Object.freeze({ model: 'gpt-6-astra', effort: 'max' }),
 ]);
 const ROUTE_KEYS = new Set(ROUTES.map(({ model, effort }) => `${model}|${effort}`));
 const ROUTE_ORDER = new Map(
@@ -470,56 +471,17 @@ function formatNumber(value, digits) {
   return value === null || !Number.isFinite(value) ? 'n/a' : value.toFixed(digits);
 }
 
-function findItem(items, model, effort) {
-  return items.find((item) => item.model === model && item.effort === effort) ?? null;
-}
-
-function isLowerCostPeer(preferred, other, iqTieMargin) {
-  const preferredIq = finiteNumber(preferred?.iq);
-  const otherIq = finiteNumber(other?.iq);
-  const preferredCost = nonnegativeNumber(preferred?.average_cost_usd);
-  const otherCost = nonnegativeNumber(other?.average_cost_usd);
-  return preferredIq !== null &&
-    otherIq !== null &&
-    preferredCost !== null &&
-    otherCost !== null &&
-    preferredIq + iqTieMargin >= otherIq &&
-    preferredCost < otherCost;
-}
-
 function formatRadarContext(snapshot, config = {}) {
-  if (
-    config?.lunaMaxAlwaysFirstWhenCapable !== undefined &&
-    config.lunaMaxAlwaysFirstWhenCapable !== true
-  ) {
-    return '';
-  }
+  if (config.lunaMaxAlwaysFirstWhenCapable === false) return '';
   const normalized = normalizeSnapshot(snapshot, { minSamples: 1 });
   if (!normalized || normalized.items.length === 0) return '';
-  const iqTieMargin = configNumber(
-    config,
-    'iqTieMargin',
-    DEFAULT_CONFIG.iqTieMargin,
-    0,
-  );
-  const item = (model, effort) => findItem(normalized.items, model, effort);
-  const relations = [];
-  if (isLowerCostPeer(item('gpt-5.6-sol', 'medium'), item('gpt-5.6-sol', 'high'), iqTieMargin)) {
-    relations.push('Sol：Medium 优先 High');
-  }
-  if (isLowerCostPeer(item('gpt-5.6-sol', 'xhigh'), item('gpt-5.6-sol', 'max'), iqTieMargin)) {
-    relations.push('Sol：XHigh 优先 Max');
-  }
-  if (isLowerCostPeer(item('gpt-5.6-sol', 'xhigh'), item('gpt-5.6-terra', 'ultra'), iqTieMargin)) {
-    relations.push('新任务：Sol XHigh 优先 Terra Ultra');
-  }
-  const lines = [
+  return [
     '[CQO_RADAR]',
-    `只比较已通过 Codex Routing Matrix 能力/风险门槛的候选；IQ 差<${formatNumber(iqTieMargin, 2)} 视为同级，同级先保留热模型/原代理，再选低预计总成本。`,
-  ];
-  if (relations.length > 0) lines.push(`当前数据：${relations.join('；')}。`);
-  lines.push('[/CQO_RADAR]');
-  return lines.join('\n');
+    'Advisory benchmark averages, not task-specific capability or cache-hit proof. Prefer capable existing context; compare total cost before switching.',
+    ...normalized.items.map((item) =>
+      `${item.model}/${item.effort}: score=${formatNumber(item.iq, 2)} n=${item.samples} avg_usd=${formatNumber(item.average_cost_usd, 6)} avg_min=${formatNumber(item.average_duration_minutes, 2)}`),
+    '[/CQO_RADAR]',
+  ].join('\n');
 }
 
 async function runCli() {

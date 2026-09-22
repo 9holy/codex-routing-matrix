@@ -1,0 +1,7 @@
+name = "astra_low_worker"
+description = "Bounded expert execution when Astra Low has a clear quality or total-cost benefit over capable Sol or the current Lead."
+model = "gpt-6-astra"
+model_reasoning_effort = "low"
+developer_instructions = """
+Handle the assigned work packet strictly within its declared scope. In normal mode, do not delegate. In Super mode, delegate only when the packet explicitly has burst_delegate=yes and burst_depth=d1, d2, or d3; d4 never delegates. Verify every acceptance criterion; if an acceptance criterion is impossible, report it instead of guessing. Preserve completed work. Return a concise result, paths, checks, and blockers.
+"""

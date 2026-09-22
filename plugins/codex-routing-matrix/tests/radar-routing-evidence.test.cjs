@@ -44,34 +44,34 @@ function payload() {
     source: 'attacker-controlled source text',
     tasks: [{ title: 'attacker-controlled task title' }],
     cells: {
-      'task-a|gpt-5.6-luna|max': {
+      'task-a|gpt-6-luna|max': {
         ran_by: [
           run(false, '2026-07-30T00:00:00Z', 99, 600),
           run(true, '2026-08-01T00:00:00Z', 1, 60),
         ],
       },
-      'task-b|gpt-5.6-luna|max': {
+      'task-b|gpt-6-luna|max': {
         ran_by: [run(false, '2026-08-01T01:00:00Z', 3, 120)],
       },
-      'task-a|gpt-5.6-sol|medium': {
+      'task-a|gpt-6-sol|medium': {
         ran_by: [run(true, '2026-08-01T02:00:00Z', 2, 180)],
       },
-      'task-b|gpt-5.6-sol|medium': {
+      'task-b|gpt-6-sol|medium': {
         ran_by: [run(true, '2026-08-01T03:00:00Z', Number.NaN, Infinity)],
       },
-      'task-a|gpt-5.6-terra|max': {
+      'task-a|gpt-6-astra|max': {
         ran_by: [run(true, '2026-08-01T04:00:00Z', 4, 240)],
       },
-      'task-b|gpt-5.6-terra|max': {
+      'task-b|gpt-6-astra|max': {
         ran_by: [run(false, '2026-08-01T05:00:00Z', 6, 300)],
       },
-      'task-c|gpt-5.6-sol|high': {
+      'task-c|gpt-6-sol|high': {
         ran_by: [run(true, undefined, 1, 60)],
       },
       'task-a|gpt-5.5|high': {
         ran_by: [run(true, '2026-08-01T06:00:00Z', 0.01, 1)],
       },
-      'malformed|gpt-5.6-sol|medium': {
+      'malformed|gpt-6-sol|medium': {
         ran_by: [{ passed: 'true', graded_at: '2026-08-01T07:00:00Z' }],
       },
     },
@@ -87,15 +87,16 @@ function responseFor(value) {
 
 (async () => {
   assert.deepEqual(ROUTES.map((route) => `${route.model}|${route.effort}`), [
-    'gpt-5.6-luna|max',
-    'gpt-5.6-sol|medium',
-    'gpt-5.6-sol|high',
-    'gpt-5.6-sol|xhigh',
-    'gpt-5.6-sol|max',
-    'gpt-5.6-sol|ultra',
-    'gpt-5.6-terra|xhigh',
-    'gpt-5.6-terra|max',
-    'gpt-5.6-terra|ultra',
+    'gpt-6-luna|max',
+    'gpt-6-sol|medium',
+    'gpt-6-sol|high',
+    'gpt-6-sol|xhigh',
+    'gpt-6-sol|max',
+    'gpt-6-astra|low',
+    'gpt-6-astra|medium',
+    'gpt-6-astra|high',
+    'gpt-6-astra|xhigh',
+    'gpt-6-astra|max',
   ]);
 
   const snapshot = buildRadarSnapshot(payload(), {
@@ -106,7 +107,7 @@ function responseFor(value) {
   assert.equal(snapshot.collected_at, '2026-08-02T00:00:00.000Z');
   assert.deepEqual(snapshot.items, [
     {
-      model: 'gpt-5.6-luna',
+      model: 'gpt-6-luna',
       effort: 'max',
       iq: 75,
       samples: 2,
@@ -115,7 +116,7 @@ function responseFor(value) {
       average_duration_minutes: 1.5,
     },
     {
-      model: 'gpt-5.6-sol',
+      model: 'gpt-6-sol',
       effort: 'medium',
       iq: 150,
       samples: 2,
@@ -124,7 +125,7 @@ function responseFor(value) {
       average_duration_minutes: 3,
     },
     {
-      model: 'gpt-5.6-terra',
+      model: 'gpt-6-astra',
       effort: 'max',
       iq: 75,
       samples: 2,
@@ -146,16 +147,17 @@ function responseFor(value) {
   const serialized = JSON.stringify(snapshot);
   assert.doesNotMatch(serialized, /attacker-controlled|nickname|task-a|gpt-5\.5/);
 
+  // Synthetic fixtures exercise formatting, not measured GPT-6 performance.
   const routingSnapshot = {
     source: SOURCE_URL,
     collected_at: '2026-08-02T00:00:00.000Z',
     items: [
-      ['gpt-5.6-luna', 'max', 85.71, 0.47],
-      ['gpt-5.6-sol', 'medium', 89.73, 3.96],
-      ['gpt-5.6-sol', 'high', 88.39, 5.22],
-      ['gpt-5.6-sol', 'xhigh', 99.11, 6.56],
-      ['gpt-5.6-sol', 'max', 100.45, 9.57],
-      ['gpt-5.6-terra', 'ultra', 100.45, 9.29],
+      ['gpt-6-luna', 'max', 85.71, 0.47],
+      ['gpt-6-sol', 'medium', 89.73, 3.96],
+      ['gpt-6-sol', 'high', 88.39, 5.22],
+      ['gpt-6-sol', 'xhigh', 99.11, 6.56],
+      ['gpt-6-sol', 'max', 100.45, 9.57],
+      ['gpt-6-astra', 'low', 100.45, 9.29],
     ].map(([model, effort, iq, average_cost_usd]) => ({
       model,
       effort,
@@ -168,17 +170,17 @@ function responseFor(value) {
   };
   const context = formatRadarContext(routingSnapshot);
   assert.match(context, /^\[CQO_RADAR\]/);
-  assert.match(context, /IQ 差<3\.00 视为同级/);
-  assert.match(context, /Sol：Medium 优先 High/);
-  assert.match(context, /Sol：XHigh 优先 Max/);
-  assert.match(context, /新任务：Sol XHigh 优先 Terra Ultra/);
-  assert.ok(context.length < 420);
-  assert.doesNotMatch(context, /attacker-controlled|untrusted|https:|采集时间|CQO_RADAR_STATUS|IQ=|0\.47/);
+  assert.match(context, /Advisory benchmark averages/);
+  assert.match(context, /gpt-6-sol\/medium: score=/);
+  assert.match(context, /gpt-6-sol\/xhigh: score=/);
+  assert.match(context, /gpt-6-astra\/low: score=/);
+  assert.ok(context.length < 1600);
+  assert.doesNotMatch(context, /attacker-controlled|untrusted|https:|采集时间|CQO_RADAR_STATUS|IQ=/);
   assert.equal(
     context,
     formatRadarContext({ ...routingSnapshot, collected_at: '2026-08-03T00:00:00.000Z' }),
   );
-  assert.match(formatRadarContext(routingSnapshot, { iqTieMargin: 7 }), /IQ 差<7\.00/);
+  assert.equal(formatRadarContext(routingSnapshot, { iqTieMargin: 7 }), context);
 
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'cqo-radar-'));
   const cachePath = path.join(tempRoot, 'radar.json');
@@ -189,6 +191,37 @@ function responseFor(value) {
     return responseFor(payload());
   };
   try {
+    const legacySnapshot = {
+      ...routingSnapshot,
+      items: routingSnapshot.items.map((item) => ({ ...item, model: 'gpt-5.6-sol' })),
+    };
+    fs.writeFileSync(cachePath, JSON.stringify(legacySnapshot), 'utf8');
+    assert.deepEqual(loadRadarCache(cachePath).items, []);
+    const legacyEvidence = await getRadarEvidence({
+      cachePath,
+      config,
+      fetchImpl: async () => { throw new Error('offline'); },
+      nowMs: NOW,
+    });
+    assert.equal(legacyEvidence.context, '');
+    assert.doesNotMatch(JSON.stringify(legacyEvidence), /gpt-5/);
+
+    fs.writeFileSync(cachePath, JSON.stringify({
+      ...routingSnapshot,
+      items: [...legacySnapshot.items, ...routingSnapshot.items,
+        { ...routingSnapshot.items[0], model: 'gpt-6-astra', effort: 'ultra' }],
+    }), 'utf8');
+    const mixedEvidence = await getRadarEvidence({
+      cachePath,
+      config,
+      fetchImpl: async () => { throw new Error('fresh cache must not fetch'); },
+      nowMs: NOW,
+    });
+    assert.equal(mixedEvidence.status, 'fresh-cache');
+    assert.equal(mixedEvidence.context, context);
+    assert.doesNotMatch(JSON.stringify(mixedEvidence), /gpt-5|ultra/);
+    fs.unlinkSync(cachePath);
+
     const cliHome = path.join(tempRoot, 'cli-home');
     writeRadarCache(resolveCachePath(cliHome), {
       ...routingSnapshot,
@@ -203,7 +236,7 @@ function responseFor(value) {
     );
     assert.equal(cli.status, 0, cli.stderr);
     assert.match(cli.stdout, /^\[CQO_RADAR\]/);
-    assert.match(cli.stdout, /Sol：Medium 优先 High/);
+    assert.match(cli.stdout, /gpt-6-sol\/medium: score=/);
     assert.doesNotMatch(cli.stdout, /IQ=|采集时间|https:/);
 
     const refreshed = await getRadarEvidence({

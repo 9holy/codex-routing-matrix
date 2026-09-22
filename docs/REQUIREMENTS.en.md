@@ -1,36 +1,37 @@
 # Requirements Baseline
 
-Lead means the current Astra or Sol controller. If Luna is unsupported or access is denied, Lead sends the unchanged work packet and progress to capable Sol Medium; capacity errors retry Luna once first. Quality failures return to Lead for reassessment.
+Lead means the current Astra or Sol controller. If Luna is unsupported or access is denied, Lead sends the unchanged work packet and progress to a capable Sol route at its lowest reliable effort; capacity errors retry once in the original agent context first. Quality failures return to Lead for reassessment.
 
 This file supports maintenance and regression tracking; it is not injected into model context. The unnumbered `Codex Routing Matrix` section in `references/ROUTING_MATRIX.md` is the only semantic routing rule. The routing skill applies it, while Hooks validate only observable mechanical fields.
 
 ## Quality And Routing
 
-- Quality is the hard gate. Optimize total cost only among routes that can reliably complete the unit.
+- Quality is the hard gate. Among routes that can reliably complete the unit, compare execution, context, cache, handoff, review, and rework costs.
 - The current Lead keeps its root model and effort and owns planning, decomposition, ownership, integration, verification, decisions, and fallback.
 - Clear, low-risk short work stays with the root agent.
-- Choose Luna Max first only for frozen, low-judgment, mechanically verifiable units it can reliably complete. Never use Luna as a trial route.
+- Use Luna Max for bounded work with a clear goal and sufficient context that it can reliably complete, including local analysis, implementation, debugging, and tests. Never use it as a trial route or rely on Lead to rescue a poor fit.
+- Reuse a capable agent with relevant context before choosing a fresh route, and never assume a cache hit.
 - Keep ambiguity, unresolved causes, architecture, security, public interfaces, production data, irreversible operations, and final judgment with Lead.
-- When Luna is unsuitable, use Sol Medium for bounded, moderate-judgment, independently verifiable work when delegation or parallelism has net value.
-- Terra is not an escalation ladder. Use its lowest reliable `xhigh`, `max`, or `ultra` effort only when it has a clear task-specific advantage over capable Sol Medium or the current Lead.
-- Use Radar at most once per root task only when multiple capable Sol/Terra routes remain unresolved. An IQ gap of at least 3 selects the higher-IQ route; otherwise retain the warm/original agent, then compare total cost.
+- When Luna is unsuitable, keep the compatible `sol_medium_worker` name; High is the default for routine independent work, Medium is for bounded light reasoning, and XHigh is for complex independent work when delegation has net value.
+- Select Astra Low only when its predicted quality or total-cost benefit over the suitable Sol effort or current Lead is clear. Do not presume it is stronger than Sol XHigh or use it as an automatic escalation step.
+- Use Radar at most once per root task only when capable Sol and Astra routes remain unresolved. Radar is advisory evidence, not an automatic IQ-gap winner.
 
 ## Team Execution
 
 - Define each non-short unit, goal, path ownership, dependencies, acceptance criteria, and integration order before delegation.
 - Default to one Worker. Parallelize only independent, write-safe units with positive net benefit.
-- For homogeneous batches, verify one representative unit, then fill available host capacity and replace completed Workers. There is no task-wide cumulative call cap.
-- Keep one writer per shared file. Workers do not delegate in normal mode. In Super mode they may delegate only when explicitly authorized and below `d4`.
+- For homogeneous batches, verify one representative unit, then add only Workers with positive net benefit and replace completed Workers; do not fill slots for its own sake. There is no task-wide cumulative call cap.
+- Keep one writer per shared file. Workers do not delegate in normal mode. In Super mode they may delegate only with `burst_delegate=yes` and `burst_depth=d1`, `d2`, or `d3`; `d4` and reviewers never delegate.
 - Use one blocking wait instead of polling.
 - Lead inspects every result or diff and reruns necessary checks. One clear local defect may return once; capability, scope, or quality failure returns to Lead.
 
 ## Mechanical Contract
 
-- Luna uses Max; Lead Worker uses Medium; Terra explicitly uses `xhigh`, `max`, or `ultra`; the read-only Sol Reviewer uses XHigh.
+- Luna uses Max; `sol_medium_worker` explicitly uses `high` by default, `medium` for bounded light reasoning, or `xhigh` for complex independent work; Astra Low uses Low; the read-only Sol Reviewer stays XHigh.
 - Named agents never receive a `model` override. `task_name` exposes the expected route and effort. `fork_turns` is `none` or a positive numeric string.
 - The plugin has exactly four Hooks: `SessionStart`, `UserPromptSubmit`, `PreToolUse`, and `SubagentStop`. Ordinary prompts are silent.
-- On the exact selected-model-capacity message, the same subagent continues once without restarting work. After a second Luna capacity failure, Lead sends the same frozen packet to `sol_medium_worker` when reliable; otherwise Lead takes over. Other second capacity failures return to Lead. Current Hooks cannot resume the root controller request, and the plugin must not claim otherwise.
-- Super mode is session-scoped and off by default. Exact Chinese or English commands toggle it. Lead is `d0`; children may use `d1-d4`; `d4` cannot delegate; the host limit is 25 child threads; all normal quality gates remain.
+- On the exact selected-model-capacity message, the same subagent continues once in the same context without restarting work. After a second Luna capacity failure, Lead sends the same frozen packet to `sol_medium_worker` at the lowest reliable Sol effort; otherwise Lead takes over. Other second capacity failures return to Lead. Current Hooks cannot resume the root controller request, and the plugin must not claim otherwise.
+- Super mode is session-scoped and off by default. Exact Chinese or English commands toggle it. Lead is `d0`; children may use `d1-d4`; `d4` cannot delegate; the plugin ceiling is 25 child threads, subject to host capacity; all normal quality gates remain.
 - The configuration guard restores only plugin registration and trusted current Hook hashes while preserving authentication, provider, endpoint, model, and unrelated tool settings.
 - First install initializes unnumbered English `Meta Rule - Conflict Resolution` and `Implementation` defaults once. Upgrades and the configuration guard never restore or overwrite them.
 - The independent Git Marketplace must be added before installation. Do not claim public search availability unless OpenAI's curated Marketplace lists the plugin.
@@ -40,6 +41,7 @@ This file supports maintenance and regression tracking; it is not injected into 
 
 - Do not change the root model or effort of a running task.
 - Do not replace Lead's capability and risk judgment with keywords, file counts, or code heuristics.
-- Do not route to GPT-5.5, `codex-auto-review`, or undeclared agents.
+- Do not treat Astra Low as an automatic escalation ladder or presume it is stronger than Sol XHigh; choose it only for a predicted benefit over the suitable Sol effort or current Lead.
+- Do not route to any GPT-5 model, `codex-auto-review`, or undeclared agents.
 - Do not add fixed normal-mode concurrency, task-wide attempt caps, polling, a wave ledger, or an automatic fallback chain.
 - A task name, packet, test, or agent claim is not proof of the backend model that actually ran.
