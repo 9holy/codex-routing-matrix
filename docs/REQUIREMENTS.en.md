@@ -12,7 +12,7 @@ This file supports maintenance and regression tracking; it is not injected into 
 - Use Luna Max for bounded work with a clear goal and sufficient context that it can reliably complete, including local analysis, implementation, debugging, and tests. Never use it as a trial route or rely on Lead to rescue a poor fit.
 - Reuse a capable agent with relevant context before choosing a fresh route, and never assume a cache hit.
 - Keep ambiguity, unresolved causes, architecture, security, public interfaces, production data, irreversible operations, and final judgment with Lead.
-- When Luna is unsuitable, keep the compatible `sol_medium_worker` name; High is the default for routine independent work, Medium is for bounded light reasoning, and XHigh is for complex independent work when delegation has net value.
+- When Luna is unsuitable, keep the compatible `sol_medium_worker` name; High is the default for routine independent work, Medium is for bounded light reasoning, and XHigh is for complex independent work. Select Max upfront only for difficult bounded work expected to exceed XHigh when delegation has net value; if XHigh is capable, do not use Max.
 - Select Astra Low only when its predicted quality or total-cost benefit over the suitable Sol effort or current Lead is clear. Do not presume it is stronger than Sol XHigh or use it as an automatic escalation step.
 - Use Radar at most once per root task only when capable Sol and Astra routes remain unresolved. Radar is advisory evidence, not an automatic IQ-gap winner.
 
@@ -27,7 +27,7 @@ This file supports maintenance and regression tracking; it is not injected into 
 
 ## Mechanical Contract
 
-- Luna uses Max; `sol_medium_worker` explicitly uses `high` by default, `medium` for bounded light reasoning, or `xhigh` for complex independent work; Astra Low uses Low; the read-only Sol Reviewer stays XHigh.
+- Luna uses Max; `sol_medium_worker` explicitly uses `high` by default, `medium` for bounded light reasoning, `xhigh` for complex independent work, or `max` for difficult bounded work expected to exceed XHigh when delegation has net value; its task labels are `sol_medium__unit`, `sol_high__unit`, `sol_xhigh__unit`, and `sol_max__unit`. Astra Low uses Low; the read-only Sol Reviewer stays XHigh.
 - Named agents never receive a `model` override. `task_name` exposes the expected route and effort. `fork_turns` is `none` or a positive numeric string.
 - The plugin has exactly four Hooks: `SessionStart`, `UserPromptSubmit`, `PreToolUse`, and `SubagentStop`. Ordinary prompts are silent.
 - On the exact selected-model-capacity message, the same subagent continues once in the same context without restarting work. After a second Luna capacity failure, Lead sends the same frozen packet to `sol_medium_worker` at the lowest reliable Sol effort; otherwise Lead takes over. Other second capacity failures return to Lead. Current Hooks cannot resume the root controller request, and the plugin must not claim otherwise.

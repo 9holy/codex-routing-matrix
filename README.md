@@ -6,7 +6,7 @@ Lead 指当前 Astra 或 Sol 主控。Luna 明确不支持或无访问权限时�
 
 ## 中文
 
-Codex 路由矩阵是给 `gpt-6-astra` / `gpt-6-sol` 使用的多模型协作插件。它让 Lead 继续负责理解需求、规划、拆分、整合和最终验收，同时把边界清楚、适合独立执行的工作交给 Luna Max、Sol（Medium/High/XHigh）、可选的 Astra Low。
+Codex 路由矩阵是给 `gpt-6-astra` / `gpt-6-sol` 使用的多模型协作插件。它让 Lead 继续负责理解需求、规划、拆分、整合和最终验收，同时把边界清楚、适合独立执行的工作交给 Luna Max、Sol worker（Medium/High/XHigh/Max）、可选的 Astra Low。
 
 它解决的不是“每个任务都换模型”，而是两个更实际的问题：复杂任务如何安全并行，以及如何在不降低质量的前提下减少不必要的高价模型调用。
 
@@ -15,7 +15,7 @@ Codex 路由矩阵是给 `gpt-6-astra` / `gpt-6-sol` 使用的多模型协作插
 1. Lead 先理解任务，短任务或强耦合工作直接完成。
 2. 需要拆分时，Lead 为每个工作单元写清目标、范围、文件归属、依赖和验收标准。
 3. 对目标和上下文足够清楚、Luna Max 能可靠完成的边界单元，可把本地分析、实现、调试和测试交给 Luna；不把 Luna 当试错路线，也不依赖 Lead 事后救回不合适的结果。
-4. `sol_medium_worker` 保留现有代理名，常规独立工作默认使用 High；边界清楚的轻量工作可显式选择 Medium，复杂独立单元可选择 XHigh。
+4. `sol_medium_worker` 保留现有代理名，常规独立工作默认使用 High；边界清楚的轻量工作可显式选择 Medium，复杂独立单元可选择 XHigh。只有预计 XHigh 不足以完成的困难边界工作且下派有净收益时，才预先选择 Max；若 XHigh 能胜任，不选 Max。
 5. Astra Low 仅在预期相对合适的 Sol 档位或当前 Lead 有明确质量或总成本收益时使用；不预设它强于 Sol XHigh，也不走自动升级梯子。
 6. 互不依赖、不会同时修改同一文件且并行有净收益的工作可以并行。
 7. Worker 完成后，Lead 检查真实改动、重跑必要验证并最终决定是否接受。能力不足、越界或质量不达标的工作直接回到 Lead。
@@ -40,13 +40,13 @@ graph LR
 |---|---|
 | 当前 Lead | 理解、规划、拆分、整合、验收和兜底 |
 | Luna Max | 目标和上下文足够清楚、能可靠完成的边界工作，包括本地分析、实现、调试和测试 |
-| Sol worker | High（默认）处理常规独立工作；轻量边界工作用 Medium，复杂独立工作用 XHigh |
+| Sol worker | High（默认）处理常规独立工作；轻量边界工作用 Medium，复杂独立工作用 XHigh；仅预计 XHigh 不足且下派有净收益的困难边界工作用 Max |
 | Astra Low | 相对合适的 Sol 档位或当前 Lead 有明确质量或总成本收益的边界清楚执行工作；不默认优于 Sol XHigh |
 | Sol Reviewer XHigh | 关键高风险改动的一次独立只读复审 |
 
-质量优先并不等于默认使用最贵模型。已有能胜任且有相关上下文的代理优先继续处理；对需要新路线的工作单元，才先判断 Luna 是否适合，再考虑 Sol（Medium/High/XHigh）、可选的 Astra Low 或当前 Lead。比较总成本时同时考虑交接、缓存、复审和返工成本，绝不假设一定命中缓存。路由一旦确定就保持不变，除非任务边界、可用性或结果发生变化。
+质量优先并不等于默认使用最贵模型。已有能胜任且有相关上下文的代理优先继续处理；对需要新路线的工作单元，才先判断 Luna 是否适合，再考虑 Sol worker（Medium/High/XHigh/Max）、可选的 Astra Low 或当前 Lead。Max 仅用于预计 XHigh 不足且下派有净收益的困难边界工作；若 XHigh 能胜任，不选 Max。比较总成本时同时考虑交接、缓存、复审和返工成本，绝不假设一定命中缓存。路由一旦确定就保持不变，除非任务边界、可用性或结果发生变化。
 
-常规独立工作默认使用 Sol High，边界清楚的轻量工作可选 Sol Medium，复杂独立工作可选 Sol XHigh；Astra Low 不是自动升级路线。
+常规独立工作默认使用 Sol High，边界清楚的轻量工作可选 Sol Medium，复杂独立工作可选 Sol XHigh；困难边界工作只有预计 XHigh 不足且下派有净收益时才选 Sol Max。Astra Low 不是自动升级路线。
 
 ### 普通模式与 Super mode
 
@@ -96,7 +96,7 @@ macOS、Linux 桌面或 Linux 服务器上的 Codex CLI 直接运行跨平台初
 node "$HOME/.codex/.tmp/marketplaces/codex-routing-matrix/plugins/codex-routing-matrix/scripts/portable-setup.cjs" install
 ```
 
-初始化会安装四个具名代理配置（Sol 支持 Medium/High/XHigh），写入无编号的 `Codex Routing Matrix`，并在 `AGENTS.md` 顶部加入一次性的英文 `Meta Rule - Conflict Resolution` 和 `Implementation`。后两条不会被以后安装或配置守护自动恢复、覆盖。
+初始化会安装四个具名代理配置（Sol 支持 Medium/High/XHigh/Max），写入无编号的 `Codex Routing Matrix`，并在 `AGENTS.md` 顶部加入一次性的英文 `Meta Rule - Conflict Resolution` 和 `Implementation`。后两条不会被以后安装或配置守护自动恢复、覆盖。
 
 在 `/hooks` 中检查并信任四个 Hook，然后新建任务。升级后只有 Hook 内容发生变化时才需要重新信任。
 
@@ -114,7 +114,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$HOME\.codex\.tmp\marketpla
 
 Lead means the current Astra or Sol controller. If Luna is unsupported or access is denied, use the capable Sol route and its lowest reliable effort with the same packet and progress; retry capacity errors once in the original agent context first.
 
-Codex Routing Matrix gives a `gpt-6-astra` / `gpt-6-sol` controller a small multi-model team. Lead keeps ownership of understanding, planning, decomposition, integration, and final acceptance. It delegates only bounded work that Luna Max, Sol (Medium/High/XHigh), or Astra Low can reliably complete.
+Codex Routing Matrix gives a `gpt-6-astra` / `gpt-6-sol` controller a small multi-model team. Lead keeps ownership of understanding, planning, decomposition, integration, and final acceptance. It delegates only bounded work that Luna Max, Sol (Medium/High/XHigh/Max), or Astra Low can reliably complete.
 
 The plugin is not designed to switch models for every prompt. It is designed to parallelize larger work safely and avoid expensive routes when a lower-cost capable route can deliver the same quality.
 
@@ -123,7 +123,7 @@ The plugin is not designed to switch models for every prompt. It is designed to 
 1. Lead understands the request and handles short or tightly coupled work directly.
 2. When decomposition helps, Lead freezes each unit's goal, scope, file ownership, dependencies, and acceptance checks.
 3. For bounded work with a clear goal and sufficient context that Luna Max can reliably complete, delegate local analysis, implementation, debugging, and tests to Luna. Never use it as a trial route or rely on Lead to rescue a poor fit.
-4. Keep the compatible `sol_medium_worker` name; use High by default for routine independent work, Medium for bounded light reasoning, and XHigh for complex independent work.
+4. Keep the compatible `sol_medium_worker` name; use High by default for routine independent work, Medium for bounded light reasoning, and XHigh for complex independent work. Select Max upfront only for difficult bounded work expected to exceed XHigh when delegation has net value; if XHigh is capable, do not use Max.
 5. Select Astra Low only for a clear predicted quality or total-cost benefit over the suitable Sol effort or current Lead; do not presume it is stronger than Sol XHigh, and never make it an automatic escalation step.
 6. Independent, write-safe units may run in parallel when the benefit exceeds coordination cost.
 7. Lead inspects the real changes, reruns necessary checks, and accepts or rejects every result. Capability, scope, or quality failures return directly to Lead.
@@ -148,11 +148,11 @@ graph LR
 |---|---|
 | Current Lead | Understand, plan, split, integrate, verify, and fall back |
 | Luna Max | Bounded work with a clear goal and sufficient context, including local analysis, implementation, debugging, and tests, when it can reliably complete the unit |
-| Sol worker | High by default for routine independent work; Medium for bounded light reasoning; XHigh for complex independent work |
+| Sol worker | High by default for routine independent work; Medium for bounded light reasoning; XHigh for complex independent work; Max only when a difficult bounded unit is expected to exceed XHigh and delegation has net value |
 | Astra Low | Bounded work with a clear predicted quality or total-cost benefit over the suitable Sol effort or current Lead; do not presume it is stronger than Sol XHigh |
 | Sol Reviewer XHigh | One independent read-only review for a critical high-risk change |
 
-Quality first does not mean selecting the most expensive model by default. Reuse a capable agent with relevant context before choosing a fresh route; for a unit that needs a new route, check whether Luna can reliably complete the bounded work with sufficient context, then consider Sol High by default, Sol Medium for bounded light reasoning, Sol XHigh for complex independent work, optional Astra Low, or the current Lead. Compare execution, handoff, cache, review, and rework costs, and never assume a cache hit. Once selected, a route stays frozen until the unit, availability, or result changes.
+Quality first does not mean selecting the most expensive model by default. Reuse a capable agent with relevant context before choosing a fresh route; for a unit that needs a new route, check whether Luna can reliably complete the bounded work with sufficient context, then consider Sol High by default, Sol Medium for bounded light reasoning, Sol XHigh for complex independent work, or Sol Max only when a difficult bounded unit is expected to exceed XHigh and delegation has net value. If XHigh is capable, do not use Max. Astra Low remains optional only for a clear predicted benefit over the suitable Sol effort or current Lead. Compare execution, handoff, cache, review, and rework costs, and never assume a cache hit. Once selected, a route stays frozen until the unit, availability, or result changes.
 
 ### Normal mode and Super mode
 
@@ -202,7 +202,7 @@ On macOS, Linux desktops, or Linux servers running Codex CLI, use the portable s
 node "$HOME/.codex/.tmp/marketplaces/codex-routing-matrix/plugins/codex-routing-matrix/scripts/portable-setup.cjs" install
 ```
 
-Setup installs four named agent profiles (Sol supports Medium/High/XHigh), adds the unnumbered `Codex Routing Matrix` section, and places one-time English `Meta Rule - Conflict Resolution` and `Implementation` defaults at the top of `AGENTS.md`. Later installs and the configuration guard do not restore or overwrite those two defaults.
+Setup installs four named agent profiles (Sol supports Medium/High/XHigh/Max), adds the unnumbered `Codex Routing Matrix` section, and places one-time English `Meta Rule - Conflict Resolution` and `Implementation` defaults at the top of `AGENTS.md`. Later installs and the configuration guard do not restore or overwrite those two defaults.
 
 Review and trust all four Hooks in `/hooks`, then start a new task. Trust must be renewed only when an update changes Hook content.
 

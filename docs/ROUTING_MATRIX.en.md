@@ -12,7 +12,7 @@ Reuse a capable agent with relevant context before choosing a fresh route; for a
 
 1. Keep short or tightly coupled work on the current Lead.
 2. Use Luna Max for bounded work with a clear goal and sufficient context that it can reliably complete, including local analysis, implementation, debugging, and tests. Never use it as a trial route or rely on Lead to rescue a poor fit.
-3. Keep the compatible `sol_medium_worker` name. Select High by default for routine independent work, Medium for bounded light-reasoning work, or XHigh for complex independent work, when delegation has net value.
+3. Keep the compatible `sol_medium_worker` name. Select High by default for routine independent work, Medium for bounded light-reasoning work, or XHigh for complex independent work. Use Max only for difficult bounded work expected to exceed XHigh when delegation has net value; if XHigh is capable, do not use Max.
 4. Select Astra Low only when its predicted quality or total-cost benefit over the suitable Sol effort or current Lead is clear; do not presume it is stronger than Sol XHigh or make it an automatic escalation step.
 5. Keep coupled, sequential, or delegation-negative work on the current Lead.
 6. Add one read-only Sol Reviewer when a critical high-risk change needs independent review.
@@ -34,7 +34,7 @@ Reuse a capable agent with relevant context before choosing a fresh route; for a
 | Agent | Model | Effort | Select when |
 |---|---|---|---|
 | `luna_worker` | `gpt-6-luna` | `max` | Bounded work with a clear goal and sufficient context that it can reliably complete, including local analysis, implementation, debugging, and tests |
-| `sol_medium_worker` | `gpt-6-sol` | `high` by default; `medium` or `xhigh` selectable | Use High for ordinary independent execution, Medium for bounded light reasoning, or XHigh for complex independent units |
+| `sol_medium_worker` | `gpt-6-sol` | `high` by default; `medium`, `xhigh`, or `max` selectable | Use High for ordinary independent execution, Medium for bounded light reasoning, XHigh for complex independent work, or Max only when a difficult bounded unit is expected to exceed XHigh and delegation has net value |
 | `astra_low_worker` | `gpt-6-astra` | `low` | Bounded work with a clear predicted quality or total-cost benefit over the suitable Sol effort or current Lead; not presumed stronger than Sol XHigh |
 | `sol_reviewer` | `gpt-6-sol` | `xhigh` | One independent read-only review for a critical high-risk change |
 
@@ -58,7 +58,7 @@ Super mode supports `d1-d4` and up to 25 child threads; `d4` cannot delegate. Tw
 
 ```text
 luna_worker: agent_type + task_name(luna_max__unit) + fork_turns
-sol_medium_worker: agent_type + reasoning_effort(medium|high|xhigh) + task_name(sol_medium__unit|sol_high__unit|sol_xhigh__unit) + fork_turns
+sol_medium_worker: agent_type + reasoning_effort(medium|high|xhigh|max) + task_name(sol_medium__unit|sol_high__unit|sol_xhigh__unit|sol_max__unit) + fork_turns
 astra_low_worker: agent_type + task_name(astra_low__unit) + fork_turns
 sol_reviewer: agent_type + task_name(sol_reviewer_xhigh__unit) + fork_turns
 ```

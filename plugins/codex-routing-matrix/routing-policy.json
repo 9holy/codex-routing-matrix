@@ -8,7 +8,7 @@
     "collaboration.spawn_agent"
   ],
   "workPacket": {
-    "hostVisibleTaskNamePattern": "^(luna_max|sol_medium|sol_high|sol_xhigh|astra_low|sol_reviewer_xhigh)__([a-z0-9][a-z0-9_]{1,47})$",
+    "hostVisibleTaskNamePattern": "^(luna_max|sol_medium|sol_high|sol_xhigh|sol_max|astra_low|sol_reviewer_xhigh)__([a-z0-9][a-z0-9_]{1,47})$",
     "hostVisibleTaskNameExample": "luna_max__unit_name"
   },
   "capacityRecovery": {
@@ -37,9 +37,9 @@
     "sol_medium_worker": {
       "profileFile": "sol-medium-worker.toml",
       "model": "gpt-6-sol",
-      "previousTemplateSha256": ["5e20aa9e1b9739916f258898dc63dff90ddf6eb20be73048f82251840275593a", "d1ed56859aadfe0984def9579219f2d39788097a276f8bb0fe1ec27d2696d3d3"],
+      "previousTemplateSha256": ["5e20aa9e1b9739916f258898dc63dff90ddf6eb20be73048f82251840275593a", "d1ed56859aadfe0984def9579219f2d39788097a276f8bb0fe1ec27d2696d3d3", "beda666b1226e8690e780b482ce31a0c4e8c69b8e3fe464a8d8c6f81700acb41"],
       "effortMode": "required",
-      "allowedEfforts": ["medium", "high", "xhigh"]
+      "allowedEfforts": ["medium", "high", "xhigh", "max"]
     },
     "astra_low_worker": {
       "profileFile": "astra-low-worker.toml",

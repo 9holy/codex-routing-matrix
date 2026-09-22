@@ -4,13 +4,13 @@ Lead means the current Astra or Sol controller. If Luna is unsupported or access
 
 ## How one task runs
 
-The current `gpt-6-astra` / `gpt-6-sol` always remains the controller. The plugin does not replace the root model or reasoning effort of a running task. It gives Lead a concise routing rule and four named agent profiles; the Sol worker uses High by default, with Medium for bounded light reasoning and XHigh for complex independent work.
+The current `gpt-6-astra` / `gpt-6-sol` always remains the controller. The plugin does not replace the root model or reasoning effort of a running task. It gives Lead a concise routing rule and four named agent profiles; the Sol worker uses High by default, Medium for bounded light reasoning, and XHigh for complex independent work. Max is only for difficult bounded work expected to exceed XHigh when delegation has net value; do not use Max if XHigh is capable.
 
 Reuse a capable agent with relevant context before choosing a fresh route; only units that need a new route enter the following checks.
 1. Lead first decides whether decomposition has net value. It handles short, tightly coupled, or naturally sequential work directly.
 2. Before delegation, Lead freezes each unit's goal, scope, single-writer ownership, dependencies, acceptance checks, and integration order.
 3. Luna Max can handle bounded work with a clear goal and sufficient context that it can reliably complete, including local analysis, implementation, debugging, and tests. Never use it as a trial route or rely on Lead to rescue a poor fit.
-4. Keep the compatible `sol_medium_worker` name; select High by default for routine independent work, Medium for bounded light-reasoning work, or XHigh for complex independent work.
+4. Keep the compatible `sol_medium_worker` name; select High by default for routine independent work, Medium for bounded light-reasoning work, or XHigh for complex independent work. Select Max upfront only for difficult bounded work expected to exceed XHigh when delegation has net value; if XHigh is capable, do not use Max.
 5. Select Astra Low only for a clear predicted quality or total-cost benefit over the suitable Sol effort or current Lead; do not presume it is stronger than Sol XHigh, and never make it an automatic escalation step.
 6. Architecture, security, public interfaces, production data, irreversible operations, unclear requirements, and undiagnosed causes stay with the current Lead.
 7. Every Worker result returns to Lead. Lead inspects the actual diff, reruns necessary checks in integration order, then accepts it, returns one local defect once, or takes over.
@@ -93,7 +93,7 @@ On macOS, Linux desktops, or Linux servers running Codex CLI, use:
 node "$HOME/.codex/.tmp/marketplaces/codex-routing-matrix/plugins/codex-routing-matrix/scripts/portable-setup.cjs" install
 ```
 
-Setup installs the Luna, Sol (Medium/High/XHigh), Astra Low, and Sol Reviewer profiles, maintains the unnumbered `Codex Routing Matrix` section, and places one-time English `Meta Rule - Conflict Resolution` and `Implementation` defaults at the top of `AGENTS.md`. Those two defaults are not guarded and are never restored or overwritten by later installs.
+Setup installs the Luna, Sol (Medium/High/XHigh/Max), Astra Low, and Sol Reviewer profiles, maintains the unnumbered `Codex Routing Matrix` section, and places one-time English `Meta Rule - Conflict Resolution` and `Implementation` defaults at the top of `AGENTS.md`. Those two defaults are not guarded and are never restored or overwritten by later installs.
 
 Upgrade commands:
 

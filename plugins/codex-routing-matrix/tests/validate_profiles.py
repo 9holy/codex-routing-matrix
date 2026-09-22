@@ -27,7 +27,7 @@ assert "team" not in policy and "sol" not in policy
 assert "allowedFallbacks" not in json.dumps(policy)
 assert "maxWorkerAttempts" not in json.dumps(policy)
 assert policy["workPacket"] == {
-    "hostVisibleTaskNamePattern": "^(luna_max|sol_medium|sol_high|sol_xhigh|astra_low|sol_reviewer_xhigh)__([a-z0-9][a-z0-9_]{1,47})$",
+    "hostVisibleTaskNamePattern": "^(luna_max|sol_medium|sol_high|sol_xhigh|sol_max|astra_low|sol_reviewer_xhigh)__([a-z0-9][a-z0-9_]{1,47})$",
     "hostVisibleTaskNameExample": "luna_max__unit_name",
 }
 assert policy["capacityRecovery"] == {
@@ -59,7 +59,7 @@ for agent_type, config in policy["namedAgents"].items():
     assert config["model"] == expected_roles[agent_type][0]
     if agent_type == "sol_medium_worker":
         assert config["effortMode"] == "required"
-        assert config["allowedEfforts"] == ["medium", "high", "xhigh"]
+        assert config["allowedEfforts"] == ["medium", "high", "xhigh", "max"]
         assert "model_reasoning_effort" not in profile
     else:
         assert config["effortMode"] == "fixed"

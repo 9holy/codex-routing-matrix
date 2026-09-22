@@ -12,7 +12,7 @@ Lead 指当前 Astra 或 Sol 主控。Luna 明确不支持或无访问权限时�
 
 1. 短任务或强耦合工作留给当前 Lead。
 2. 目标明确、上下文充分且 Luna Max 能可靠完成的边界工作可交给 Luna，包括本地分析、实现、调试和测试；不把 Luna 当试错路线，也不依赖 Lead 事后救回不合适的结果。
-3. `sol_medium_worker` 保留兼容的代理名；常规独立工作默认使用 High，边界清楚的轻量工作使用 Medium，复杂独立工作可选择 XHigh，且下派须有净收益。
+3. `sol_medium_worker` 保留兼容的代理名；常规独立工作默认使用 High，边界清楚的轻量工作使用 Medium，复杂独立工作可选择 XHigh。只有预计 XHigh 不足以完成的困难边界工作且下派有净收益时才预先选择 Max；若 XHigh 能胜任，不选 Max。
 4. Astra Low 仅在预期相对合适的 Sol 档位或当前 Lead 有明确质量或总成本收益时使用；不预设它强于 Sol XHigh，也不走自动升级梯子。
 5. 耦合、顺序执行或下派没有净收益的工作留给当前 Lead。
 6. 关键高风险改动需要独立性时，增加一次 Sol Reviewer 只读复审。
@@ -34,7 +34,7 @@ Lead 指当前 Astra 或 Sol 主控。Luna 明确不支持或无访问权限时�
 | 代理 | 模型 | 档位 | 使用条件 |
 |---|---|---|---|
 | `luna_worker` | `gpt-6-luna` | `max` | 目标明确、上下文充分且能可靠完成的边界工作，包括本地分析、实现、调试和测试 |
-| `sol_medium_worker` | `gpt-6-sol` | 默认 `high`，可选 `medium` 或 `xhigh` | 常规独立工作使用 High；边界清楚的轻量工作使用 Medium；复杂独立单元使用 XHigh |
+| `sol_medium_worker` | `gpt-6-sol` | 默认 `high`，可选 `medium`、`xhigh` 或 `max` | 常规独立工作使用 High；轻量边界工作使用 Medium；复杂独立工作用 XHigh；困难边界工作仅在预计 XHigh 不足且下派有净收益时用 Max |
 | `astra_low_worker` | `gpt-6-astra` | `low` | 相对合适的 Sol 档位或当前 Lead 有明确预期质量或总成本收益的边界清楚执行；不预设强于 Sol XHigh |
 | `sol_reviewer` | `gpt-6-sol` | `xhigh` | 关键高风险变更的一次独立只读复审 |
 
@@ -58,7 +58,7 @@ Super mode 支持 `d1-d4` 和最多 25 个子线程，`d4` 不再下派。25 是
 
 ```text
 luna_worker: agent_type + task_name(luna_max__unit) + fork_turns
-sol_medium_worker: agent_type + reasoning_effort(medium|high|xhigh) + task_name(sol_medium__unit|sol_high__unit|sol_xhigh__unit) + fork_turns
+sol_medium_worker: agent_type + reasoning_effort(medium|high|xhigh|max) + task_name(sol_medium__unit|sol_high__unit|sol_xhigh__unit|sol_max__unit) + fork_turns
 astra_low_worker: agent_type + task_name(astra_low__unit) + fork_turns
 sol_reviewer: agent_type + task_name(sol_reviewer_xhigh__unit) + fork_turns
 ```

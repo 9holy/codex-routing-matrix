@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Add Sol Max dispatch for difficult independent work when XHigh is expected insufficient. Keep High as the default and choose the effort upfront, without requiring failed attempts.
+
 ## 0.9.0 - 2026-09-23
 
 ### GPT-6 routing

@@ -82,6 +82,8 @@ try {
   expectAllow('sol-high', workerInput('sol_medium_worker', { reasoning_effort: 'high' }));
   expectDeny('sol-high-wrong-label', workerInput('sol_medium_worker', { reasoning_effort: 'high', task_name: 'sol_medium__wrong_effort' }));
   expectAllow('sol-xhigh', workerInput('sol_medium_worker', { reasoning_effort: 'xhigh' }));
+  expectAllow('sol-max', workerInput('sol_medium_worker', { reasoning_effort: 'max' }));
+  expectDeny('sol-max-wrong-label', workerInput('sol_medium_worker', { reasoning_effort: 'max', task_name: 'sol_xhigh__wrong_effort' }));
   expectDeny('sol-missing-effort', workerInput('sol_medium_worker', { reasoning_effort: undefined }));
   expectDeny('sol-medium-wrong-label', workerInput('sol_medium_worker', { task_name: 'sol_xhigh__wrong_effort' }));
   expectDeny('sol-xhigh-wrong-label', workerInput('sol_medium_worker', { reasoning_effort: 'xhigh', task_name: 'sol_medium__wrong_effort' }));
@@ -112,7 +114,7 @@ try {
   expectDeny('fork-all', workerInput('luna_worker', { fork_turns: 'all' }));
   expectDeny('model-override', workerInput('luna_worker', { model: 'gpt-6-luna' }));
   expectDeny('luna-effort-override', workerInput('luna_worker', { reasoning_effort: 'xhigh' }));
-  for (const effort of ['low', 'max', '', null]) {
+  for (const effort of ['low', 'ultra', '', null]) {
     expectDeny(`sol-invalid-effort-${effort}`, workerInput('sol_medium_worker', { reasoning_effort: effort }));
   }
   expectDeny('reviewer-effort-override', workerInput('sol_reviewer', { reasoning_effort: 'max' }));

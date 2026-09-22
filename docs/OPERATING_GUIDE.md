@@ -4,13 +4,13 @@ Lead 指当前 Astra 或 Sol 主控。Luna 明确不支持或无访问权限时�
 
 ## 一次任务怎样运行
 
-当前 `gpt-6-astra` / `gpt-6-sol` 始终是主控。插件不会替换已经启动任务的根模型或推理档位，而是给 Lead 一套简洁的分工规则和四个具名代理；Sol worker 常规使用 High，轻量边界工作可用 Medium，复杂独立工作可用 XHigh。
+当前 `gpt-6-astra` / `gpt-6-sol` 始终是主控。插件不会替换已经启动任务的根模型或推理档位，而是给 Lead 一套简洁的分工规则和四个具名代理；Sol worker 常规使用 High，轻量边界工作可用 Medium，复杂独立工作可用 XHigh。只有预计 XHigh 不足以完成的困难边界工作且下派有净收益时才预先选择 Max；若 XHigh 能胜任，不选 Max。
 
 已有能胜任且有相关上下文的代理优先继续处理；只有需要新路线的单元才进入下面的判断。
 1. Lead 先判断任务是否值得拆分。短任务、强耦合工作和顺序执行更合适的工作由 Lead 直接完成。
 2. 拆分前，Lead 写清每个单元的目标、范围、唯一文件写入者、依赖、验收标准和集成顺序。
 3. 目标明确、上下文充分且 Luna Max 能可靠完成的边界工作可交给 Luna，包括本地分析、实现、调试和测试；不把 Luna 当试错路线，也不依赖 Lead 事后救回不合适的结果。
-4. `sol_medium_worker` 保留兼容的代理名；常规独立工作默认使用 High，边界清楚的轻量工作使用 Medium，复杂独立工作可选择 XHigh。
+4. `sol_medium_worker` 保留兼容的代理名；常规独立工作默认使用 High，边界清楚的轻量工作使用 Medium，复杂独立工作可选择 XHigh。只有预计 XHigh 不足且下派有净收益时，才为困难边界工作预先选择 Max；若 XHigh 能胜任，不选 Max。
 5. Astra Low 仅在预期相对合适的 Sol 档位或当前 Lead 有明确质量或总成本收益时使用；不预设它强于 Sol XHigh，也不走自动升级梯子。
 6. 架构、安全、公共接口、生产数据、不可逆操作、模糊需求和原因尚未查清的问题留给当前 Lead 决定。
 7. 所有 Worker 结果最终都回到 Lead。Lead 检查实际差异、按集成顺序重跑必要验证，然后接受、退回一次局部修正，或自己接管。
@@ -93,7 +93,7 @@ macOS、Linux 桌面或 Linux 服务器上的 Codex CLI 直接运行：
 node "$HOME/.codex/.tmp/marketplaces/codex-routing-matrix/plugins/codex-routing-matrix/scripts/portable-setup.cjs" install
 ```
 
-初始化会安装 Luna、Sol（Medium/High/XHigh）、Astra Low 和 Sol Reviewer 四个具名代理，维护无编号的 `Codex Routing Matrix`，并在首次安装时把英文 `Meta Rule - Conflict Resolution` 和 `Implementation` 放到 `AGENTS.md` 顶部。后两条不是守护内容，以后不会被安装器自动恢复或覆盖。
+初始化会安装 Luna、Sol（Medium/High/XHigh/Max）、Astra Low 和 Sol Reviewer 四个具名代理，维护无编号的 `Codex Routing Matrix`，并在首次安装时把英文 `Meta Rule - Conflict Resolution` 和 `Implementation` 放到 `AGENTS.md` 顶部。后两条不是守护内容，以后不会被安装器自动恢复或覆盖。
 
 升级命令：
 

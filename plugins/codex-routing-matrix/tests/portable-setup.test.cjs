@@ -234,7 +234,7 @@ try {
     const fixedSolPath = path.join(fixedSolHome, 'agents', 'sol-medium-worker.toml');
     const selectableSol = fs.readFileSync(fixedSolPath, 'utf8');
     fs.writeFileSync(fixedSolPath, selectableSol
-      .replace('Worker for bounded implementation and analysis; default to high, use medium for clear light-reasoning work or xhigh for complex independent work.', 'Worker for bounded, independently verifiable tasks that require moderate judgment.')
+      .replace('Worker for bounded implementation and analysis; default to high, use medium for clear light-reasoning work, xhigh for complex independent work, or max only when xhigh is expected insufficient and delegation is worthwhile.', 'Worker for bounded, independently verifiable tasks that require moderate judgment.')
       .replace('developer_instructions =', 'model_reasoning_effort = "medium"\ndeveloper_instructions ='));
     const fixedSolState = state(fixedSolHome).profiles['sol-medium-worker.toml'];
     run('install', fixedSolHome);
@@ -251,7 +251,7 @@ try {
           oldTemplate = oldTemplate.replace('Worker for bounded, verifiable execution, local analysis, implementation, debugging, and tests.', 'Worker for clear, bounded, and verifiable tasks.');
         }
         if (config.profileFile === 'sol-medium-worker.toml') {
-          oldTemplate = oldTemplate.replace('Worker for bounded implementation and analysis; default to high, use medium for clear light-reasoning work or xhigh for complex independent work.', 'Worker for bounded, independently verifiable tasks that require moderate judgment.');
+          oldTemplate = oldTemplate.replace('Worker for bounded implementation and analysis; default to high, use medium for clear light-reasoning work, xhigh for complex independent work, or max only when xhigh is expected insufficient and delegation is worthwhile.', 'Worker for bounded, independently verifiable tasks that require moderate judgment.');
           oldTemplate = oldTemplate.replace('developer_instructions =', 'model_reasoning_effort = "medium"\ndeveloper_instructions =');
         }
         fs.writeFileSync(target, oldTemplate);

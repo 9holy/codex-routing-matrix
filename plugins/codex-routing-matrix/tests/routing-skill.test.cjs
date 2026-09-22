@@ -14,7 +14,7 @@ const policy = JSON.parse(fs.readFileSync(path.join(root, 'routing-policy.json')
 for (const relative of ['references/ROUTING_MATRIX.md', 'routing-policy.json', 'scripts/radar-routing-evidence.cjs']) {
   assert.ok(fs.existsSync(path.join(root, relative)), relative);
 }
-for (const route of ['luna_max', 'sol_medium', 'sol_high', 'sol_xhigh', 'astra_low', 'sol_reviewer_xhigh']) {
+for (const route of ['luna_max', 'sol_medium', 'sol_high', 'sol_xhigh', 'sol_max', 'astra_low', 'sol_reviewer_xhigh']) {
   assert.match(route + '__unit', new RegExp(policy.workPacket.hostVisibleTaskNamePattern));
 }
 for (const route of ['terra_xhigh', 'terra_max', 'terra_ultra']) {
