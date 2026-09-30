@@ -6,7 +6,7 @@ Lead 指当前 Astra 或 Sol 主控。Luna 明确不支持或无访问权限时�
 
 ## 核心原则
 
-当前 `gpt-6-astra` / `gpt-6-sol` 是唯一主控，负责理解、拆解、分派、整合、验收和兜底。插件保留任务启动时已经选择的主控推理档位，不在运行中替用户切换根档位。
+当前 `gpt-6-astra` / `gpt-6.1-sol` 是首选主控，已启动的 `gpt-6-sol` 仍受支持；主控负责理解、拆解、分派、整合、验收和兜底。插件保留任务启动时已经选择的主控推理档位，不在运行中替用户切换根档位。
 
 已有能胜任且有相关上下文的代理优先继续处理；对需要新路线的工作单元，按下面的顺序判断：
 
@@ -34,9 +34,9 @@ Lead 指当前 Astra 或 Sol 主控。Luna 明确不支持或无访问权限时�
 | 代理 | 模型 | 档位 | 使用条件 |
 |---|---|---|---|
 | `luna_worker` | `gpt-6-luna` | `max` | 目标明确、上下文充分且能可靠完成的边界工作，包括本地分析、实现、调试和测试 |
-| `sol_medium_worker` | `gpt-6-sol` | 默认 `high`，可选 `medium`、`xhigh` 或 `max` | 常规独立工作使用 High；轻量边界工作使用 Medium；复杂独立工作用 XHigh；困难边界工作仅在预计 XHigh 不足且下派有净收益时用 Max |
+| `sol_medium_worker` | `gpt-6.1-sol` | 默认 `high`，可选 `medium`、`xhigh` 或 `max` | 常规独立工作使用 High；轻量边界工作使用 Medium；复杂独立工作用 XHigh；困难边界工作仅在预计 XHigh 不足且下派有净收益时用 Max |
 | `astra_low_worker` | `gpt-6-astra` | `low` | 相对合适的 Sol 档位或当前 Lead 有明确预期质量或总成本收益的边界清楚执行；不预设强于 Sol XHigh |
-| `sol_reviewer` | `gpt-6-sol` | `xhigh` | 关键高风险变更的一次独立只读复审 |
+| `sol_reviewer` | `gpt-6.1-sol` | `xhigh` | 关键高风险变更的一次独立只读复审 |
 
 Worker 必须留在工作包范围内，不做无关修改。普通模式下 Worker 不再下派；Super mode 下只有工作包包含 `burst_delegate=yes` 且 `burst_depth=d1`、`d2` 或 `d3` 才能继续拆分；`d4` 和 Reviewer 永不下派。共享文件始终只有一个写入者。
 

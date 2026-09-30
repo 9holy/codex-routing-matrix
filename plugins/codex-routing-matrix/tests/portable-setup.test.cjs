@@ -246,7 +246,7 @@ try {
       const before = state(home);
       for (const config of Object.values(policy.namedAgents).filter((config) => config.previousTemplateSha256)) {
         const target = path.join(home, 'agents', config.profileFile);
-        let oldTemplate = fs.readFileSync(target, 'utf8').replace('model = "gpt-6-', 'model = "gpt-5.6-');
+        let oldTemplate = fs.readFileSync(target, 'utf8').replace('model = "gpt-6.1-sol"', 'model = "gpt-5.6-sol"');
         if (config.profileFile === 'luna-worker.toml') {
           oldTemplate = oldTemplate.replace('Worker for bounded, verifiable execution, local analysis, implementation, debugging, and tests.', 'Worker for clear, bounded, and verifiable tasks.');
         }

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add GPT-6.1 Sol as the active Sol worker and reviewer model. Keep the existing `gpt-6-sol` root compatible for already-started tasks.
+
 - Add Sol Max dispatch for difficult independent work when XHigh is expected insufficient. Keep High as the default and choose the effort upfront, without requiring failed attempts.
 
 ## 0.9.0 - 2026-09-23

@@ -6,7 +6,7 @@ Lead means the current Astra or Sol controller. If Luna is unsupported or access
 
 ## Core rule
 
-The current `gpt-6-astra` / `gpt-6-sol` is the sole controller for understanding, decomposition, delegation, integration, acceptance, and fallback. The plugin preserves the controller reasoning effort selected when the task starts and does not switch the root effort during a running task.
+The current `gpt-6-astra` / `gpt-6.1-sol` is the preferred controller; an already-started `gpt-6-sol` controller remains supported. The controller owns understanding, decomposition, delegation, integration, acceptance, and fallback. The plugin preserves the controller reasoning effort selected when the task starts and does not switch the root effort during a running task.
 
 Reuse a capable agent with relevant context before choosing a fresh route; for a unit that needs a new route, choose routes in this order:
 
@@ -34,9 +34,9 @@ Reuse a capable agent with relevant context before choosing a fresh route; for a
 | Agent | Model | Effort | Select when |
 |---|---|---|---|
 | `luna_worker` | `gpt-6-luna` | `max` | Bounded work with a clear goal and sufficient context that it can reliably complete, including local analysis, implementation, debugging, and tests |
-| `sol_medium_worker` | `gpt-6-sol` | `high` by default; `medium`, `xhigh`, or `max` selectable | Use High for ordinary independent execution, Medium for bounded light reasoning, XHigh for complex independent work, or Max only when a difficult bounded unit is expected to exceed XHigh and delegation has net value |
+| `sol_medium_worker` | `gpt-6.1-sol` | `high` by default; `medium`, `xhigh`, or `max` selectable | Use High for ordinary independent execution, Medium for bounded light reasoning, XHigh for complex independent work, or Max only when a difficult bounded unit is expected to exceed XHigh and delegation has net value |
 | `astra_low_worker` | `gpt-6-astra` | `low` | Bounded work with a clear predicted quality or total-cost benefit over the suitable Sol effort or current Lead; not presumed stronger than Sol XHigh |
-| `sol_reviewer` | `gpt-6-sol` | `xhigh` | One independent read-only review for a critical high-risk change |
+| `sol_reviewer` | `gpt-6.1-sol` | `xhigh` | One independent read-only review for a critical high-risk change |
 
 Workers stay inside packet scope and make no unrelated changes. Workers do not delegate in normal mode. In Super mode, further delegation requires `burst_delegate=yes` and `burst_depth=d1`, `d2`, or `d3`; `d4` and reviewers never delegate. Every shared file has one writer.
 

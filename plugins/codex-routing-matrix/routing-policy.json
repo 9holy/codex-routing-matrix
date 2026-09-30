@@ -1,6 +1,6 @@
 {
   "schemaVersion": 9,
-  "policyVersion": "0.9.0",
+  "policyVersion": "0.9.1",
   "toolNames": [
     "spawn_agent",
     "Agent",
@@ -36,8 +36,8 @@
     },
     "sol_medium_worker": {
       "profileFile": "sol-medium-worker.toml",
-      "model": "gpt-6-sol",
-      "previousTemplateSha256": ["5e20aa9e1b9739916f258898dc63dff90ddf6eb20be73048f82251840275593a", "d1ed56859aadfe0984def9579219f2d39788097a276f8bb0fe1ec27d2696d3d3", "beda666b1226e8690e780b482ce31a0c4e8c69b8e3fe464a8d8c6f81700acb41"],
+      "model": "gpt-6.1-sol",
+      "previousTemplateSha256": ["5e20aa9e1b9739916f258898dc63dff90ddf6eb20be73048f82251840275593a", "d1ed56859aadfe0984def9579219f2d39788097a276f8bb0fe1ec27d2696d3d3", "beda666b1226e8690e780b482ce31a0c4e8c69b8e3fe464a8d8c6f81700acb41", "89e77b1e2170ec0dba1f2cfb9fd61245f80d52c95b4e565038a08b5c603f5435"],
       "effortMode": "required",
       "allowedEfforts": ["medium", "high", "xhigh", "max"]
     },
@@ -49,7 +49,7 @@
     },
     "sol_reviewer": {
       "profileFile": "sol-reviewer.toml",
-      "model": "gpt-6-sol",
+      "model": "gpt-6.1-sol",
       "previousTemplateSha256": ["7640b445d084ec97a51d9e413cbdad3677f2b53cbc9a13e38320bf88bc69273e"],
       "effortMode": "fixed",
       "fixedEffort": "xhigh",

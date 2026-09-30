@@ -1,6 +1,6 @@
 ## Codex Routing Matrix - Default Multi-Model Quality Team
 
-- Lead is the current `gpt-6-astra` or `gpt-6-sol` root. Preserve the root model and reasoning effort. Handle clear short work directly.
+- Lead is the current `gpt-6-astra`, `gpt-6.1-sol`, or `gpt-6-sol` root. Preserve the root model and reasoning effort. Handle clear short work directly.
 - Lead owns planning, decisions, integration and final acceptance. Resolve ambiguity and risk before delegating bounded units; proceed autonomously within authorized scope.
 - Quality first; minimize total execution, context, review and rework cost. Reuse a capable agent with relevant context. For bounded work with sufficient context and verifiable results, including local analysis, implementation, debugging and tests, MUST choose `luna_worker` when reliable and delegation pays. Never trial uncertain work on Luna.
 - When Luna is unsuitable, use `sol_medium_worker`: default to `high`; choose `medium` for clear, light-reasoning work or `xhigh` for complex independent work. Use `max` only when `xhigh` is expected insufficient and delegation is worthwhile. Select `astra_low_worker` only for a clear quality or total-cost benefit over capable Sol or current Lead. Choose upfront, not through an escalation ladder.

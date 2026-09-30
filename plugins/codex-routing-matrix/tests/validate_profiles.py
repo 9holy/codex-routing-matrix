@@ -16,7 +16,7 @@ routing = (ROOT / "skills" / "codex-quality-routing-team" / "SKILL.md").read_tex
 
 base_version = manifest["version"].partition("+codex.")[0]
 assert manifest["name"] == "codex-routing-matrix"
-assert base_version == policy["policyVersion"] == "0.9.0"
+assert base_version == policy["policyVersion"] == "0.9.1"
 assert policy["schemaVersion"] == 9
 assert set(policy) == {
     "schemaVersion", "policyVersion", "toolNames", "workPacket",
@@ -36,9 +36,9 @@ assert policy["capacityRecovery"] == {
 }
 expected_roles = {
     "luna_worker": ("gpt-6-luna", "max"),
-    "sol_medium_worker": ("gpt-6-sol", "medium"),
+    "sol_medium_worker": ("gpt-6.1-sol", "medium"),
     "astra_low_worker": ("gpt-6-astra", "low"),
-    "sol_reviewer": ("gpt-6-sol", "xhigh"),
+    "sol_reviewer": ("gpt-6.1-sol", "xhigh"),
 }
 assert set(policy["namedAgents"]) == set(expected_roles)
 assert policy["retiredProfiles"] == [{

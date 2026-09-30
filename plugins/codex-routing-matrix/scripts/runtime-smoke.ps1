@@ -41,7 +41,7 @@ try {
   $previousErrorAction = $ErrorActionPreference
   try {
     $ErrorActionPreference = 'Continue'
-    $probeRaw = & $codex exec --ephemeral --json -m gpt-6-sol `
+    $probeRaw = & $codex exec --ephemeral --json -m gpt-6.1-sol `
       -c 'model_reasoning_effort="medium"' -s read-only `
       'Codex Routing Matrix runtime smoke probe. Reply with exactly CQO_HOST_PROBE.' 2>&1 |
       Out-String

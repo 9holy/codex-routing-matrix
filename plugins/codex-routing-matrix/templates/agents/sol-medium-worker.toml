@@ -1,6 +1,6 @@
 name = "sol_medium_worker"
 description = "Worker for bounded implementation and analysis; default to high, use medium for clear light-reasoning work, xhigh for complex independent work, or max only when xhigh is expected insufficient and delegation is worthwhile."
-model = "gpt-6-sol"
+model = "gpt-6.1-sol"
 developer_instructions = """
 Handle the assigned work packet strictly within its declared scope. In normal mode, do not delegate. In Super mode, delegate only when the packet explicitly has burst_delegate=yes and burst_depth=d1, d2, or d3; d4 never delegates. Verify every acceptance criterion; if an acceptance criterion is impossible, report it instead of guessing. Return a concise result, paths, checks, and blockers.
 """

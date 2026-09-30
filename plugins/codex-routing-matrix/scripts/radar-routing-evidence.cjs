@@ -25,10 +25,10 @@ const DEFAULT_CONFIG = Object.freeze({
 // This is deliberately duplicated here. The radar must not be able to add a route.
 const ROUTES = Object.freeze([
   Object.freeze({ model: 'gpt-6-luna', effort: 'max' }),
-  Object.freeze({ model: 'gpt-6-sol', effort: 'medium' }),
-  Object.freeze({ model: 'gpt-6-sol', effort: 'high' }),
-  Object.freeze({ model: 'gpt-6-sol', effort: 'xhigh' }),
-  Object.freeze({ model: 'gpt-6-sol', effort: 'max' }),
+  Object.freeze({ model: 'gpt-6.1-sol', effort: 'medium' }),
+  Object.freeze({ model: 'gpt-6.1-sol', effort: 'high' }),
+  Object.freeze({ model: 'gpt-6.1-sol', effort: 'xhigh' }),
+  Object.freeze({ model: 'gpt-6.1-sol', effort: 'max' }),
   Object.freeze({ model: 'gpt-6-astra', effort: 'low' }),
   Object.freeze({ model: 'gpt-6-astra', effort: 'medium' }),
   Object.freeze({ model: 'gpt-6-astra', effort: 'high' }),

@@ -4,7 +4,7 @@ Lead means the current Astra or Sol controller. If Luna is unsupported or access
 
 ## How one task runs
 
-The current `gpt-6-astra` / `gpt-6-sol` always remains the controller. The plugin does not replace the root model or reasoning effort of a running task. It gives Lead a concise routing rule and four named agent profiles; the Sol worker uses High by default, Medium for bounded light reasoning, and XHigh for complex independent work. Max is only for difficult bounded work expected to exceed XHigh when delegation has net value; do not use Max if XHigh is capable.
+The current `gpt-6-astra` / `gpt-6.1-sol` is the preferred controller; an already-started `gpt-6-sol` remains the controller. The plugin does not replace the root model or reasoning effort of a running task. It gives Lead a concise routing rule and four named agent profiles; the Sol worker uses High by default, Medium for bounded light reasoning, and XHigh for complex independent work. Max is only for difficult bounded work expected to exceed XHigh when delegation has net value; do not use Max if XHigh is capable.
 
 Reuse a capable agent with relevant context before choosing a fresh route; only units that need a new route enter the following checks.
 1. Lead first decides whether decomposition has net value. It handles short, tightly coupled, or naturally sequential work directly.

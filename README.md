@@ -6,7 +6,7 @@ Lead 指当前 Astra 或 Sol 主控。Luna 明确不支持或无访问权限时�
 
 ## 中文
 
-Codex 路由矩阵是给 `gpt-6-astra` / `gpt-6-sol` 使用的多模型协作插件。它让 Lead 继续负责理解需求、规划、拆分、整合和最终验收，同时把边界清楚、适合独立执行的工作交给 Luna Max、Sol worker（Medium/High/XHigh/Max）、可选的 Astra Low。
+Codex 路由矩阵是给 `gpt-6-astra` / `gpt-6.1-sol` 使用的多模型协作插件，已启动的 `gpt-6-sol` 仍兼容。它让 Lead 继续负责理解需求、规划、拆分、整合和最终验收，同时把边界清楚、适合独立执行的工作交给 Luna Max、Sol worker（Medium/High/XHigh/Max）、可选的 Astra Low。
 
 它解决的不是“每个任务都换模型”，而是两个更实际的问题：复杂任务如何安全并行，以及如何在不降低质量的前提下减少不必要的高价模型调用。
 
@@ -114,7 +114,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$HOME\.codex\.tmp\marketpla
 
 Lead means the current Astra or Sol controller. If Luna is unsupported or access is denied, use the capable Sol route and its lowest reliable effort with the same packet and progress; retry capacity errors once in the original agent context first.
 
-Codex Routing Matrix gives a `gpt-6-astra` / `gpt-6-sol` controller a small multi-model team. Lead keeps ownership of understanding, planning, decomposition, integration, and final acceptance. It delegates only bounded work that Luna Max, Sol (Medium/High/XHigh/Max), or Astra Low can reliably complete.
+Codex Routing Matrix gives a `gpt-6-astra` / `gpt-6.1-sol` controller a small multi-model team; an already-started `gpt-6-sol` controller remains supported. Lead keeps ownership of understanding, planning, decomposition, integration, and final acceptance. It delegates only bounded work that Luna Max, Sol (Medium/High/XHigh/Max), or Astra Low can reliably complete.
 
 The plugin is not designed to switch models for every prompt. It is designed to parallelize larger work safely and avoid expensive routes when a lower-cost capable route can deliver the same quality.
 
