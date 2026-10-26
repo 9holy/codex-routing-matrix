@@ -14,7 +14,6 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $pluginId = 'codex-routing-matrix@codex-routing-matrix'
-$burstMaxConcurrentThreads = 25
 $hookIds = @(
   "$pluginId`:hooks/hooks.json:pre_tool_use:0:0",
   "$pluginId`:hooks/hooks.json:session_start:0:0",
@@ -230,16 +229,6 @@ function Test-PluginRegistration {
   return [regex]::IsMatch($text, $pattern)
 }
 
-function Test-BurstCapacity {
-  if (-not (Test-Path -LiteralPath $script:configPath -PathType Leaf)) { return $false }
-  $text = [IO.File]::ReadAllText($script:configPath, [Text.UTF8Encoding]::new($false))
-  $match = [regex]::Match(
-    $text,
-    '(?ms)^\[agents\]\s*\r?\n(?:(?!^\[).)*?^max_concurrent_threads_per_session\s*=\s*(\d+)\s*$'
-  )
-  return $match.Success -and [int]$match.Groups[1].Value -eq $burstMaxConcurrentThreads
-}
-
 function Merge-ManagedConfig {
   param([string]$ConfigPath, [object[]]$TrustedHooks)
   $backups = @()
@@ -251,10 +240,6 @@ function Merge-ManagedConfig {
     $text = Set-TomlSectionValue -Text $text `
       -HeaderPattern ('(?m)^\[plugins\.' + $quotedPluginId + '\]\s*$') `
       -CanonicalHeader "[plugins.`"$pluginId`"]" -Key 'enabled' -Value 'true'
-    $text = Set-TomlSectionValue -Text $text `
-      -HeaderPattern '(?m)^\[agents\]\s*$' `
-      -CanonicalHeader '[agents]' -Key 'max_concurrent_threads_per_session' `
-      -Value ([string]$burstMaxConcurrentThreads)
     foreach ($retiredHookId in $retiredHookIds) {
       $escapedId = [regex]::Escape($retiredHookId)
       $quotedId = '(?:"' + $escapedId + '"|' + "'" + $escapedId + "'" + ')'
@@ -284,7 +269,7 @@ function Merge-ManagedConfig {
       continue
     }
     Write-Utf8Atomic $ConfigPath $text
-    if ((Test-PluginRegistration) -and (Test-BurstCapacity) -and (Test-TrustPresent $TrustedHooks)) { return $backups }
+    if ((Test-PluginRegistration) -and (Test-TrustPresent $TrustedHooks)) { return $backups }
     Start-Sleep -Milliseconds (250 * $attempt)
   }
   throw 'External config writes prevented managed plugin configuration restoration after three attempts'
@@ -430,7 +415,6 @@ function Repair-Registration {
   }
   $verified = Get-InstalledPlugin
   if ($null -eq $verified -or -not (Test-InstalledIdentity $verified $state) -or
-      -not (Test-BurstCapacity) -or
       -not (Test-TrustPresent @($state.trustedHooks))) {
     throw 'Config guard repair did not restore an enabled plugin and exact Hook trust'
   }
@@ -678,7 +662,6 @@ switch ($Mode) {
         $healthy = $null -ne $installed -and
           (Test-InstalledIdentity $installed $state) -and
           (Get-HookBundleHash ([string]$state.installedPath)) -ceq [string]$state.hookBundleHash -and
-          (Test-BurstCapacity) -and
           (Test-TrustPresent @($state.trustedHooks))
       } catch { $healthy = $false }
     }

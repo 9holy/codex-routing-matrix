@@ -6,15 +6,16 @@ This file supports maintenance and regression tracking; it is not injected into 
 
 ## Quality And Routing
 
-- Quality is the hard gate. Among routes that can reliably complete the unit, compare execution, context, cache, handoff, review, and rework costs.
+- Quality comes first. Among routes that can reliably complete the unit, optimize total cost and end-to-end time, including execution, context, cache, handoff, review, and rework; never assume a cache hit.
 - The current Lead keeps its root model and effort and owns planning, decomposition, ownership, integration, verification, decisions, and fallback.
 - Clear, low-risk short work stays with the root agent.
-- Use Luna Max for bounded work with a clear goal and sufficient context that it can reliably complete, including local analysis, implementation, debugging, and tests. Never use it as a trial route or rely on Lead to rescue a poor fit.
+- Luna uses fixed Max only for settled, low-risk read-only extraction, formatting, prescribed checks, or code edits following Lead-approved steps. Independent diagnosis, design, and shared-state changes stay with Sol/Lead.
 - Reuse a capable agent with relevant context before choosing a fresh route, and never assume a cache hit.
 - Keep ambiguity, unresolved causes, architecture, security, public interfaces, production data, irreversible operations, and final judgment with Lead.
-- When Luna is unsuitable, keep the compatible `sol_medium_worker` name; High is the default for routine independent work, Medium is for bounded light reasoning, and XHigh is for complex independent work. Select Max upfront only for difficult bounded work expected to exceed XHigh when delegation has net value; if XHigh is capable, do not use Max.
+- When Luna is unsuitable, keep the compatible `sol_medium_worker` name; High is the default for routine independent work, Medium is for clear scoped work (not only trivial or no-reasoning tasks), and XHigh is for complex independent work. Use Max only for difficult bounded work when XHigh is expected to be insufficient and delegation has net value. Select effort per unit; do not switch or redo work for a small price difference or benchmark.
+- Use `terra_worker` with `gpt-6.1-terra` directly at XHigh or Max only for supplied screen-content understanding, concise writing, or screen-driven scoped fixes with clear inputs and acceptance. It is not a general-reasoning fallback or replacement for complex Sol/Astra work.
 - Select Astra Low only when its predicted quality or total-cost benefit over the suitable Sol effort or current Lead is clear. Do not presume it is stronger than Sol XHigh or use it as an automatic escalation step.
-- Use Radar at most once per root task only when capable Sol and Astra routes remain unresolved. Radar is advisory evidence, not an automatic IQ-gap winner.
+- Any optional public-benchmark/Radar lookup is advisory and limited to one total per root task; IQ or benchmark rankings never automatically select a winner. Read Radar only when capable Sol and Astra routes remain unresolved.
 
 ## Team Execution
 
@@ -27,7 +28,7 @@ This file supports maintenance and regression tracking; it is not injected into 
 
 ## Mechanical Contract
 
-- Luna uses Max; `sol_medium_worker` explicitly uses `high` by default, `medium` for bounded light reasoning, `xhigh` for complex independent work, or `max` for difficult bounded work expected to exceed XHigh when delegation has net value; its task labels are `sol_medium__unit`, `sol_high__unit`, `sol_xhigh__unit`, and `sol_max__unit`. Astra Low uses Low; the read-only Sol Reviewer stays XHigh.
+- `luna_worker` uses fixed Max with task label `luna_max__unit`; its scope is settled, low-risk read-only work or code edits following Lead-approved steps. `sol_medium_worker` explicitly uses `high` by default, `medium` for clear scoped work, `xhigh` for complex independent work, or `max` only for difficult bounded work when XHigh is expected to be insufficient and delegation has net value; its task labels are `sol_medium__unit`, `sol_high__unit`, `sol_xhigh__unit`, and `sol_max__unit`. `terra_worker` uses `gpt-6.1-terra` directly at XHigh or Max with task labels `terra_xhigh__unit` and `terra_max__unit` for screen and writing work. Astra Low uses Low; the read-only Astra Reviewer uses `gpt-6-astra` at fixed XHigh.
 - Named agents never receive a `model` override. `task_name` exposes the expected route and effort. `fork_turns` is `none` or a positive numeric string.
 - The plugin has exactly four Hooks: `SessionStart`, `UserPromptSubmit`, `PreToolUse`, and `SubagentStop`. Ordinary prompts are silent.
 - On the exact selected-model-capacity message, the same subagent continues once in the same context without restarting work. After a second Luna capacity failure, Lead sends the same frozen packet to `sol_medium_worker` at the lowest reliable Sol effort; otherwise Lead takes over. Other second capacity failures return to Lead. Current Hooks cannot resume the root controller request, and the plugin must not claim otherwise.

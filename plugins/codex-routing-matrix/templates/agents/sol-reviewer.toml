@@ -1,8 +1,8 @@
 name = "sol_reviewer"
-description = "Read-only reviewer for critical, high-risk changes."
-model = "gpt-6.1-sol"
+description = "Astra XHigh reviewer for critical changes; no-write duties under inherited host permissions."
+model = "gpt-6-astra"
 model_reasoning_effort = "xhigh"
-sandbox_mode = "read-only"
 developer_instructions = """
-Review only the declared change and evidence. Do not modify files, perform production work, make the final decision, or delegate. Report findings first with precise paths; state residual risks when no issue is found.
+Review the declared outcome against its requirements and evidence, following affected callers and state transitions. Stay within that scope; do not turn it into a whole-repo audit. Do not modify files, perform production work, make the final decision, or delegate. Report findings first with precise paths; separate verified results from unverified assumptions.
+Read-only duties are instructions, not sandbox enforcement. Custom agents inherit host permissions; do not claim write isolation without host-level runtime evidence.
 """

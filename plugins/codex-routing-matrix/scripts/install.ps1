@@ -32,11 +32,6 @@ function Test-ProfileContract {
   if ($Config.effortMode -eq 'fixed' -and $effort -cne $Config.fixedEffort) {
     return "fixed effort is not $($Config.fixedEffort)"
   }
-  if ($Config.PSObject.Properties.Name -contains 'sandboxMode') {
-    if ((Get-TomlString $text 'sandbox_mode') -cne $Config.sandboxMode) {
-      return "sandbox_mode is not $($Config.sandboxMode)"
-    }
-  }
   return $null
 }
 
@@ -475,5 +470,7 @@ try {
   DefaultRules = $defaultRulesResult
   RoutingMatrix = $routingMatrixResult
   Verified = $true
+  VerificationScope = 'profile-contracts'
+  ReviewerWriteIsolation = 'NOT_VERIFIED'
   NextStep = 'Install and enable the plugin, trust its hooks in /hooks, optionally enable config-guard.ps1 for external config switchers, then start a new task.'
 } | ConvertTo-Json -Depth 5

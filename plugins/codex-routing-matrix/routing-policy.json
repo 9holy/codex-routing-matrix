@@ -1,6 +1,6 @@
 {
-  "schemaVersion": 9,
-  "policyVersion": "0.9.1",
+  "schemaVersion": 10,
+  "policyVersion": "0.10.0",
   "toolNames": [
     "spawn_agent",
     "Agent",
@@ -8,7 +8,7 @@
     "collaboration.spawn_agent"
   ],
   "workPacket": {
-    "hostVisibleTaskNamePattern": "^(luna_max|sol_medium|sol_high|sol_xhigh|sol_max|astra_low|sol_reviewer_xhigh)__([a-z0-9][a-z0-9_]{1,47})$",
+    "hostVisibleTaskNamePattern": "^(luna_max|terra_xhigh|terra_max|sol_medium|sol_high|sol_xhigh|sol_max|astra_low|sol_reviewer_xhigh)__([a-z0-9][a-z0-9_]{1,47})$",
     "hostVisibleTaskNameExample": "luna_max__unit_name"
   },
   "capacityRecovery": {
@@ -41,6 +41,13 @@
       "effortMode": "required",
       "allowedEfforts": ["medium", "high", "xhigh", "max"]
     },
+    "terra_worker": {
+      "profileFile": "terra-worker.toml",
+      "model": "gpt-6.1-terra",
+      "previousTemplateSha256": ["5f158c2e3f8a65c34165ee1f4d3ac7a580f0a5eaf78392fa6c034329521e6488", "b4222891bc1d4803f5d376bd3d5d5f4e45b5cfd35d35520026f806e3ff34cfe3", "57abdf330f7acca36948b25799cadc0a8e23c330f0f38f78e7dae7224f74f073", "fc55beaed703a6656f658d1718503c7c419e84131d31b6a9ad7b560a6d0d47f4"],
+      "effortMode": "required",
+      "allowedEfforts": ["xhigh", "max"]
+    },
     "astra_low_worker": {
       "profileFile": "astra-low-worker.toml",
       "model": "gpt-6-astra",
@@ -49,14 +56,24 @@
     },
     "sol_reviewer": {
       "profileFile": "sol-reviewer.toml",
-      "model": "gpt-6.1-sol",
-      "previousTemplateSha256": ["7640b445d084ec97a51d9e413cbdad3677f2b53cbc9a13e38320bf88bc69273e"],
+      "model": "gpt-6-astra",
+      "previousTemplateSha256": [
+        "7640b445d084ec97a51d9e413cbdad3677f2b53cbc9a13e38320bf88bc69273e",
+        "25dafbd52aefeee8bee0d8417d0df2a0d5db9ab86dab2769c2994010aa7ade90",
+        "eb00b3485a79522ba0655c333ccd23c19ca24831285ca8a015fe13af7d5eb77a",
+        "02821c9f2b54dc201638e15ad1ce437679c75b14cff19a38a87da7489df0e21b",
+        "5d6a7a419c255bc3eee4a4bfd9af1a2955b4761b7f8be3a08890127b6163099b",
+        "b915a1d442e3f989b63fc7a513f33a214484f12b6a79a56d5d15b460da3ad883",
+        "7ba63032444a01e4748c09fae3960154e9b7c26e67bb558691f36e2f176aa085",
+        "748199df9dfbf7a3a0e62f8340fdf9b29eb4a014ddc9983d183bd482ee4d64d3",
+        "4005b24664af205fa3316cb3941a52f6029afc2ef15d17833b3e188cf1e82842",
+        "0230df2b3d24a1f9f5462f12233dbf8b938ea2a9db6d229a01e0d4e9c60d392e"
+      ],
       "effortMode": "fixed",
-      "fixedEffort": "xhigh",
-      "sandboxMode": "read-only"
+      "fixedEffort": "xhigh"
     }
   },
-  "retiredProfiles": [{"agentType": "terra_worker", "profileFile": "terra-worker.toml", "templateSha256": "5f158c2e3f8a65c34165ee1f4d3ac7a580f0a5eaf78392fa6c034329521e6488", "previousTemplateSha256": ["57abdf330f7acca36948b25799cadc0a8e23c330f0f38f78e7dae7224f74f073"]}],
+  "retiredProfiles": [],
   "burstMode": {
     "enabledByExactCommand": "\u5f00\u542f\u7206\u79cd\u6a21\u5f0f",
     "disabledByExactCommand": "\u5173\u95ed\u7206\u79cd\u6a21\u5f0f",

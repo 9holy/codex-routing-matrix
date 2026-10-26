@@ -77,6 +77,9 @@ if (-not $runtimeSmokeSource.Contains('CQO_RUNTIME_SMOKE_PROOF_PATH')) {
 if (-not $runtimeSmokeSource.Contains("PreToolUseHookTrust = 'NOT_VERIFIED'")) {
   throw 'Runtime smoke must not claim PreToolUse trust without a dedicated host-event probe'
 }
+if (-not $runtimeSmokeSource.Contains("ReviewerWriteIsolation = 'NOT_VERIFIED'")) {
+  throw 'Runtime smoke must not claim subagent write isolation from a root-session probe'
+}
 
 & $python (Join-Path $pluginRoot 'tests/validate_profiles.py')
 if ($LASTEXITCODE -ne 0) { throw 'Agent profile validation failed' }

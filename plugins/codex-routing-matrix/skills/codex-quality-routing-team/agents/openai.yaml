@@ -1,6 +1,6 @@
 interface:
   display_name: "Codex 质量路由团队"
-  short_description: "Luna 优先，Sol 默认 High，按需选择 Medium、XHigh 或 Max"
-  default_prompt: "使用 $codex-quality-routing-team 拆分并路由这个任务，由当前主控最终验收。"
+  short_description: "Luna Max 明确执行；Sol 主推复杂推理，Terra 专注屏幕与写作"
+  default_prompt: "使用 $codex-quality-routing-team 拆分并路由这个任务，由当前主控最终验收；复杂推理交给 Sol，Terra 仅处理屏幕内容理解、提供材料写作和屏幕驱动的边界修复。"
 policy:
   allow_implicit_invocation: true

@@ -19,9 +19,17 @@ for (const required of [
   'MUST choose `luna_worker`',
   'Never trial uncertain work on Luna',
   'use `sol_medium_worker`',
-  'default to `high`; choose `medium` for clear, light-reasoning work or `xhigh` for complex independent work',
-  'Select `astra_low_worker` only for a clear quality or total-cost benefit',
+  'default `high`; `medium` for clear scope or `xhigh` for complex work',
+  'Luna stays at `max`',
+  'Select `astra_low_worker` only for a clear quality/cost benefit',
   'Choose upfront, not through an escalation ladder',
+  'Cross-source identity, accounting and persistence favor XHigh or Lead',
+  'verify user outcomes, not test counts or nonempty screens',
+  'Workers own their checks',
+  'Verify unclear targets and environments before delegation',
+  'Check references and later changes',
+  'repeated tool failures without new evidence',
+  'critical workflows and state transitions before final integration checks',
   'Use Radar once at most per root task',
   'Freeze each route',
   'Selected model is at capacity. Please try a different model.',
@@ -37,8 +45,8 @@ for (const forbidden of [
 
 assert.ok(rule.indexOf('MUST choose `luna_worker`') < rule.indexOf('When Luna is unsuitable'));
 assert.match(rule, /All named profiles may run as subagents/);
-assert.match(rule, /In normal mode, Workers do not delegate/);
-assert.match(rule, /Super mode, a Worker may delegate only when the packet explicitly authorizes it at `d1-d3`/);
+assert.match(rule, /Normal Workers do not delegate/);
+assert.match(rule, /Super Workers need explicit `d1-d3` authorization/);
 assert.doesNotMatch(rule, /The only Lead subagents are/);
 for (const field of ['allowed paths and single-writer owner', 'dependencies', 'acceptance', 'integration order']) {
   assert.match(skill, new RegExp(field));
@@ -47,6 +55,27 @@ assert.match(skill, /run `node \.\.\/\.\.\/scripts\/radar-routing-evidence\.cjs`
 assert.match(skill, /do not run it again/);
 assert.match(skill, /Freeze the selected route/);
 assert.match(skill, /fallback: current Lead; preserve completed work/);
+assert.match(skill, /Resume a completed agent with `followup_task`/);
+assert.match(skill, /`send_message` alone does not resume it/);
+assert.match(skill, /approved references and later changes/);
+assert.match(skill, /when already available/);
+assert.match(skill, /never invent measurements or run extra work just to obtain them/);
+const reviewer = read('templates/agents/sol-reviewer.toml');
+assert.match(reviewer, /^model = "gpt-6-astra"$/m);
+assert.match(reviewer, /^model_reasoning_effort = "xhigh"$/m);
+assert.match(reviewer, /following affected callers and state transitions/);
+assert.match(reviewer, /do not turn it into a whole-repo audit/);
+assert.match(reviewer, /separate verified results from unverified assumptions/);
+const terra = read('templates/agents/terra-worker.toml');
+assert.match(terra, /^model = "gpt-6\.1-terra"$/m);
+assert.doesNotMatch(terra, /^model_reasoning_effort\s*=/m);
+assert.match(terra, /Return unclear identity, accounting-window, persistence or architectural decisions to Lead/);
+const terraRule = rule.split('\n').find((line) => line.includes('`terra_worker`'));
+assert.ok(terraRule);
+for (const concept of [/bounded/i, /visual/i, /computer-use/i, /writing/i, /scoped.*fix/i, /optional/i, /`xhigh`/, /`max`/, /not a replacement/i]) {
+  assert.match(terraRule, concept);
+}
+assert.match(skill, /For `terra_worker`, pass `reasoning_effort:"xhigh"` or `"max"` only/);
 
 const docsRoot = path.join(repoRoot, 'docs');
 const docPaths = [
@@ -60,7 +89,9 @@ if (docPaths.every((file) => fs.existsSync(file))) {
   for (const document of [readme, matrix, guide]) {
     assert.match(document, /Luna/);
     assert.match(document, /Astra Low/);
-    assert.doesNotMatch(document, /gpt-5(?:\.\d+|-[a-z])[\w.-]*|terra_worker/i);
+    assert.doesNotMatch(document, /gpt-5(?:\.\d+|-[a-z])[\w.-]*/i);
+    assert.match(document, /Terra/);
+    assert.match(document, /gpt-6\.1-terra/);
     assert.match(document, /Lead/);
   }
   for (const document of [readme, matrix, guide]) {
@@ -68,7 +99,7 @@ if (docPaths.every((file) => fs.existsSync(file))) {
     assert.match(document, /[Xx][Hh]igh/);
   }
   assert.match(matrix, /路由确定后冻结/);
-  assert.match(guide, /路由选择在当前根任务内冻结/);
+  assert.match(guide, /路由(?:选择)?在当前根任务内冻结/);
   for (const id of [
     'Q01', 'Q02', 'Q03', 'Q04', 'Q05', 'Q06', 'Q07', 'Q08', 'Q09', 'Q10', 'Q11',
     'T01', 'T02', 'T03', 'T04', 'T05', 'T06', 'T07',

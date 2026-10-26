@@ -43,7 +43,7 @@
     ],
     "SubagentStop": [
       {
-        "matcher": "^(luna_worker|sol_medium_worker|astra_low_worker|sol_reviewer)$",
+        "matcher": "^(luna_worker|sol_medium_worker|terra_worker|astra_low_worker|sol_reviewer)$",
         "hooks": [
           {
             "type": "command",

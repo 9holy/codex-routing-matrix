@@ -120,9 +120,6 @@ function profileProblem(file, config, agentType) {
   if (config.effortMode === 'fixed' && effort !== config.fixedEffort) {
     return `fixed effort is not ${config.fixedEffort}`;
   }
-  if (Object.hasOwn(config, 'sandboxMode') && tomlString(text, 'sandbox_mode') !== config.sandboxMode) {
-    return `sandbox_mode is not ${config.sandboxMode}`;
-  }
   return null;
 }
 
@@ -395,7 +392,8 @@ function install(codexHome, force) {
   }
   const defaultRules = installDefaultRules(codexHome, firstInstall);
   const routingMatrix = syncRoutingMatrix(codexHome);
-  return { command: 'install', codexHome, results, defaultRules, routingMatrix, verified: true };
+  return { command: 'install', codexHome, results, defaultRules, routingMatrix, verified: true,
+    verificationScope: 'profile-contracts', reviewerWriteIsolation: 'NOT_VERIFIED' };
 }
 
 function status(codexHome) {
@@ -404,6 +402,8 @@ function status(codexHome) {
   const results = inspectProfiles(codexHome, profiles, entries);
   return {
     command: 'status',
+    verificationScope: 'profile-contracts',
+    reviewerWriteIsolation: 'NOT_VERIFIED',
     codexHome,
     installed: results.every((item) => item.valid),
     stateSchemaVersion: Object.keys(profiles).length ? 1 : null,

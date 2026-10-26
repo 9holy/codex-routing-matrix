@@ -58,6 +58,8 @@ try {
 
   const installed = invoke('install', fresh);
   assert.equal(installed.verified, true);
+  assert.equal(installed.verificationScope, 'profile-contracts');
+  assert.equal(installed.reviewerWriteIsolation, 'NOT_VERIFIED');
   assert.equal(installed.results.length, profileFiles.length);
   assert.ok(installed.results.every((item) => item.status === 'install'));
   assert.equal(state(fresh).schemaVersion, 1);
@@ -84,7 +86,66 @@ try {
   assert.equal(fs.readFileSync(path.join(fresh, 'AGENTS.md'), 'utf8'), agentsAfterFirstInstall);
   const inspected = invoke('status', fresh, { useEnv: true });
   assert.equal(inspected.installed, true);
+  assert.equal(inspected.verificationScope, 'profile-contracts');
+  assert.equal(inspected.reviewerWriteIsolation, 'NOT_VERIFIED');
   assert.ok(inspected.results.every((item) => item.valid && item.contentMatches));
+
+  const previousReviewer = [
+    'name = "sol_reviewer"',
+    'description = "Read-only reviewer for critical, high-risk changes."',
+    'model = "gpt-6.1-sol"',
+    'model_reasoning_effort = "xhigh"',
+    'sandbox_mode = "read-only"',
+    'developer_instructions = """',
+    'Review the declared outcome against its requirements and evidence, following affected callers and state transitions. Stay within that scope; do not turn it into a whole-repo audit. Do not modify files, perform production work, make the final decision, or delegate. Report findings first with precise paths; separate verified results from unverified assumptions.',
+    '"""', '',
+  ].join('\n');
+  const historicalReviewer = previousReviewer.replace(/^Review .+$/m, 'Review only the declared change and evidence. Do not modify files, perform production work, make the final decision, or delegate. Report findings first with precise paths; state residual risks when no issue is found.');
+  const previousManagedReviewer = previousReviewer
+    .replace('Read-only reviewer for critical, high-risk changes.', 'Reviewer for critical changes; no-write duties under inherited host permissions.')
+    .replace('sandbox_mode = "read-only"\n', '')
+    .replace('\n"""\n', '\nRead-only duties are instructions, not sandbox enforcement. Custom agents inherit host permissions; do not claim write isolation without host-level runtime evidence.\n"""\n');
+  for (const [name, fixture] of [['sandboxed', previousReviewer], ['inherited', previousManagedReviewer]]) {
+    for (const [ending, previous] of [['lf', fixture], ['crlf', fixture.replace(/\n/g, '\r\n')]]) {
+      const home = path.join(tempRoot, `previous-reviewer-${name}-${ending}`);
+      invoke('install', home);
+      const reviewer = path.join(home, 'agents', 'sol-reviewer.toml');
+      fs.writeFileSync(reviewer, previous, 'utf8');
+      const ownership = state(home).profiles['sol-reviewer.toml'];
+      const upgraded = invoke('install', home);
+      const result = upgraded.results.find((item) => item.agent === 'sol_reviewer');
+      assert.equal(result.status, 'refresh');
+      assert.equal(fs.readFileSync(path.join(result.backup, 'sol-reviewer.toml.bak'), 'utf8'), previous);
+      assert.deepEqual(state(home).profiles['sol-reviewer.toml'], ownership);
+      assert.deepEqual(fs.readFileSync(reviewer), fs.readFileSync(path.join(templateDir, 'sol-reviewer.toml')));
+      assert.equal(upgraded.reviewerWriteIsolation, 'NOT_VERIFIED');
+      assert.equal(invoke('install', home).results.find((item) => item.agent === 'sol_reviewer').status, 'kept');
+    }
+  }
+  const externalReviewerHome = path.join(tempRoot, 'external-reviewer');
+  copyTemplate(externalReviewerHome, 'sol-reviewer.toml', '\nsandbox_mode = "read-only"\n');
+  const externalReviewerFile = path.join(externalReviewerHome, 'agents', 'sol-reviewer.toml');
+  fs.writeFileSync(externalReviewerFile, fs.readFileSync(externalReviewerFile, 'utf8').replace('Review the declared outcome', 'Follow my custom review conventions. Review the declared outcome'));
+  const externalReviewerBefore = fs.readFileSync(externalReviewerFile);
+  const externalReviewerInstall = invoke('install', externalReviewerHome);
+  assert.equal(externalReviewerInstall.results.find((item) => item.agent === 'sol_reviewer').ownership, 'external');
+  assert.equal(Object.hasOwn(state(externalReviewerHome).profiles, 'sol-reviewer.toml'), false);
+  assert.deepEqual(fs.readFileSync(externalReviewerFile), externalReviewerBefore);
+  assert.equal(externalReviewerInstall.reviewerWriteIsolation, 'NOT_VERIFIED');
+  assert.equal(invoke('status', externalReviewerHome).reviewerWriteIsolation, 'NOT_VERIFIED');
+
+  for (const [name, text] of [['known', previousReviewer], ['custom', `${previousManagedReviewer}# external custom edit\n`]]) {
+    const home = path.join(tempRoot, `conflicting-sol-reviewer-${name}`);
+    const agents = path.join(home, 'agents');
+    fs.mkdirSync(agents, { recursive: true });
+    const reviewer = path.join(agents, 'sol-reviewer.toml');
+    fs.writeFileSync(reviewer, text);
+    const result = invoke('install', home, { fail: true });
+    assert.deepEqual(result.conflicts.map((item) => item.file), ['sol-reviewer.toml']);
+    assert.equal(fs.readFileSync(reviewer, 'utf8'), text);
+    assert.equal(fs.existsSync(path.join(home, '.codex-routing-matrix.install-state.json')), false);
+    assert.deepEqual(fs.readdirSync(agents), ['sol-reviewer.toml']);
+  }
 
   const conflict = path.join(tempRoot, 'conflict');
   copyTemplate(conflict, 'luna-worker.toml');
@@ -212,29 +273,38 @@ try {
   for (const backend of process.platform === 'win32' ? ['portable', 'powershell'] : ['portable']) {
     const run = (command, home, fail = false) => {
       if (backend === 'portable') return invoke(command, home, { fail });
-      const result = spawnSync('pwsh', ['-NoProfile', '-File', path.join(root, 'scripts', `${command}.ps1`), '-CodexHome', home], { encoding: 'utf8' });
+      const result = spawnSync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(root, 'scripts', `${command}.ps1`), '-CodexHome', home], { encoding: 'utf8' });
       if (fail) assert.notEqual(result.status, 0, result.stdout);
       else assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
     };
-    const historicalHome = path.join(tempRoot, `${backend}-historical-terra`);
-    run('install', historicalHome);
-    const historicalTerra = path.join(historicalHome, 'agents', 'terra-worker.toml');
-    fs.writeFileSync(historicalTerra, oldTerra.replace(
+    const historicalTerra = oldTerra.replace(
       'Bounded work with a clear task-specific advantage over Sol Medium or the current Lead.',
       'Worker for bounded, verifiable tasks that require deeper reasoning.',
-    ));
-    const historicalState = state(historicalHome);
-    historicalState.profiles['terra-worker.toml'] = { ownership: 'created', backupFile: null };
-    fs.writeFileSync(path.join(historicalHome, '.codex-routing-matrix.install-state.json'), JSON.stringify(historicalState));
-    run('install', historicalHome);
-    assert.equal(fs.existsSync(historicalTerra), false);
-    assert.equal(Object.hasOwn(state(historicalHome).profiles, 'terra-worker.toml'), false);
+    );
+    for (const [name, fixture] of [['latest', oldTerra], ['historical', historicalTerra]]) {
+      for (const [ending, previous] of [['lf', fixture], ['crlf', fixture.replace(/\n/g, '\r\n')]]) {
+        const home = path.join(tempRoot, `${backend}-terra-${name}-${ending}`);
+        run('install', home);
+        const agents = path.join(home, 'agents');
+        const terra = path.join(agents, 'terra-worker.toml');
+        fs.writeFileSync(terra, previous);
+        const before = state(home).profiles['terra-worker.toml'];
+        run('install', home);
+        assert.deepEqual(fs.readFileSync(terra), fs.readFileSync(path.join(templateDir, 'terra-worker.toml')));
+        assert.deepEqual(state(home).profiles['terra-worker.toml'], before);
+        const backups = fs.readdirSync(agents).filter((file) => file.startsWith('terra-worker.toml-'));
+        assert.equal(backups.length, 1);
+        assert.equal(fs.readFileSync(path.join(agents, backups[0], 'terra-worker.toml.bak'), 'utf8'), previous);
+        run('uninstall', home);
+        assert.equal(fs.existsSync(terra), false);
+      }
+    }
     const fixedSolHome = path.join(tempRoot, `${backend}-fixed-sol-upgrade`);
     run('install', fixedSolHome);
     const fixedSolPath = path.join(fixedSolHome, 'agents', 'sol-medium-worker.toml');
     const selectableSol = fs.readFileSync(fixedSolPath, 'utf8');
     fs.writeFileSync(fixedSolPath, selectableSol
-      .replace('Worker for bounded implementation and analysis; default to high, use medium for clear light-reasoning work, xhigh for complex independent work, or max only when xhigh is expected insufficient and delegation is worthwhile.', 'Worker for bounded, independently verifiable tasks that require moderate judgment.')
+      .replace('Worker for bounded implementation and analysis; default to high, use medium for clear scoped work, xhigh for complex independent work, or max only when xhigh is expected insufficient and delegation is worthwhile.', 'Worker for bounded, independently verifiable tasks that require moderate judgment.')
       .replace('developer_instructions =', 'model_reasoning_effort = "medium"\ndeveloper_instructions ='));
     const fixedSolState = state(fixedSolHome).profiles['sol-medium-worker.toml'];
     run('install', fixedSolHome);
@@ -244,14 +314,18 @@ try {
       const home = path.join(tempRoot, `${backend}-upgrade-${ownership}`);
       run('install', home);
       const before = state(home);
-      for (const config of Object.values(policy.namedAgents).filter((config) => config.previousTemplateSha256)) {
+      for (const config of Object.values(policy.namedAgents).filter((config) => config.previousTemplateSha256 && config.profileFile !== 'terra-worker.toml')) {
         const target = path.join(home, 'agents', config.profileFile);
-        let oldTemplate = fs.readFileSync(target, 'utf8').replace('model = "gpt-6.1-sol"', 'model = "gpt-5.6-sol"');
+        let oldTemplate = (config.profileFile === 'sol-reviewer.toml' ? historicalReviewer : fs.readFileSync(target, 'utf8'))
+          .replace('model = "gpt-6.1-sol"', 'model = "gpt-5.6-sol"')
+          .replace('model = "gpt-6-luna"', 'model = "gpt-5.6-luna"');
         if (config.profileFile === 'luna-worker.toml') {
-          oldTemplate = oldTemplate.replace('Worker for bounded, verifiable execution, local analysis, implementation, debugging, and tests.', 'Worker for clear, bounded, and verifiable tasks.');
+          oldTemplate = oldTemplate
+            .replace('Low-risk execution of settled steps: extraction, formatting, prescribed checks and approved-pattern edits. No independent diagnosis, design or shared-state changes.', 'Worker for clear, bounded, and verifiable tasks.')
+            .replace(' If the task requires an unspecified design or root-cause decision, return it to Lead before editing.', '');
         }
         if (config.profileFile === 'sol-medium-worker.toml') {
-          oldTemplate = oldTemplate.replace('Worker for bounded implementation and analysis; default to high, use medium for clear light-reasoning work, xhigh for complex independent work, or max only when xhigh is expected insufficient and delegation is worthwhile.', 'Worker for bounded, independently verifiable tasks that require moderate judgment.');
+          oldTemplate = oldTemplate.replace('Worker for bounded implementation and analysis; default to high, use medium for clear scoped work, xhigh for complex independent work, or max only when xhigh is expected insufficient and delegation is worthwhile.', 'Worker for bounded, independently verifiable tasks that require moderate judgment.');
           oldTemplate = oldTemplate.replace('developer_instructions =', 'model_reasoning_effort = "medium"\ndeveloper_instructions =');
         }
         fs.writeFileSync(target, oldTemplate);
@@ -280,7 +354,7 @@ try {
         assert.equal(fs.readFileSync(terra, 'utf8'), oldTerra);
         fs.writeFileSync(restore, saved);
       }
-      // An unrelated conflict must prevent retirement and every other mutation.
+      // An unrelated conflict must prevent migration and every other mutation.
       const reviewer = path.join(home, 'agents', 'sol-reviewer.toml');
       const reviewerBefore = fs.readFileSync(reviewer);
       fs.appendFileSync(reviewer, '\n# unknown customization\n');
@@ -290,7 +364,7 @@ try {
       assert.equal(fs.readFileSync(terra, 'utf8'), oldTerra);
       fs.writeFileSync(reviewer, reviewerBefore);
       run('install', home);
-      assert.equal(fs.existsSync(terra), false);
+      assert.deepEqual(state(home).profiles['terra-worker.toml'], before.profiles['terra-worker.toml']);
       for (const file of profileFiles) assert.deepEqual(fs.readFileSync(path.join(home, 'agents', file)), fs.readFileSync(path.join(templateDir, file)));
       if (ownership === 'replaced') assert.equal(state(home).profiles['luna-worker.toml'].backupFile, before.profiles['luna-worker.toml'].backupFile);
       run('uninstall', home);
@@ -300,22 +374,57 @@ try {
         assert.equal(fs.readFileSync(path.join(home, 'agents', 'luna-worker.toml'), 'utf8'), original);
       }
     }
-    for (const owned of [false, true]) {
-      const home = path.join(tempRoot, `${backend}-retired-conflict-${owned}`);
+    const retiredHome = path.join(tempRoot, `${backend}-absent-replaced-terra`);
+    run('install', retiredHome);
+    const retiredTerra = path.join(retiredHome, 'agents', 'terra-worker.toml');
+    fs.unlinkSync(retiredTerra);
+    const retiredState = state(retiredHome);
+    const original = 'name = "original_terra"\nmodel = "private-model"\n';
+    const originalDir = path.join(retiredHome, 'agents', 'original');
+    fs.mkdirSync(originalDir);
+    fs.writeFileSync(path.join(originalDir, 'terra-worker.toml.bak'), original);
+    const originalEntry = { ownership: 'replaced', backupFile: 'agents/original/terra-worker.toml.bak' };
+    retiredState.profiles['terra-worker.toml'] = originalEntry;
+    fs.writeFileSync(path.join(retiredHome, '.codex-routing-matrix.install-state.json'), JSON.stringify(retiredState));
+    run('install', retiredHome);
+    assert.deepEqual(fs.readFileSync(retiredTerra), fs.readFileSync(path.join(templateDir, 'terra-worker.toml')));
+    assert.deepEqual(state(retiredHome).profiles['terra-worker.toml'], originalEntry);
+    assert.equal(fs.readFileSync(path.join(originalDir, 'terra-worker.toml.bak'), 'utf8'), original);
+    run('uninstall', retiredHome);
+    assert.equal(fs.readFileSync(retiredTerra, 'utf8'), original);
+    assert.equal(fs.existsSync(path.join(retiredHome, '.codex-routing-matrix.install-state.json')), false);
+
+    for (const [name, owned, previous] of [
+      ['external-known', false, oldTerra],
+      ['external-custom', false, `${oldTerra}# custom\n`],
+      ['owned-custom', true, `${oldTerra}# custom\n`],
+    ]) {
+      const home = path.join(tempRoot, `${backend}-terra-conflict-${name}`);
       run('install', home);
       const terra = path.join(home, 'agents', 'terra-worker.toml');
-      fs.writeFileSync(terra, `${oldTerra}# custom\n`);
+      fs.writeFileSync(terra, previous);
       const statePath = path.join(home, '.codex-routing-matrix.install-state.json');
-      if (owned) {
-        const current = state(home);
-        current.profiles['terra-worker.toml'] = { ownership: 'created', backupFile: null };
-        fs.writeFileSync(statePath, JSON.stringify(current));
-      }
+      const current = state(home);
+      if (!owned) delete current.profiles['terra-worker.toml'];
+      fs.writeFileSync(statePath, JSON.stringify(current));
       const before = fs.readFileSync(statePath);
+      const agentsBefore = fs.readFileSync(path.join(home, 'AGENTS.md'));
       run('install', home, true);
       assert.deepEqual(fs.readFileSync(statePath), before);
-      assert.equal(fs.readFileSync(terra, 'utf8'), `${oldTerra}# custom\n`);
+      assert.deepEqual(fs.readFileSync(path.join(home, 'AGENTS.md')), agentsBefore);
+      assert.equal(fs.readFileSync(terra, 'utf8'), previous);
     }
+
+    const externalTerraHome = path.join(tempRoot, `${backend}-external-current-terra`);
+    copyTemplate(externalTerraHome, 'terra-worker.toml');
+    const externalTerra = path.join(externalTerraHome, 'agents', 'terra-worker.toml');
+    const customTerra = fs.readFileSync(externalTerra, 'utf8').replace('Handle the assigned work packet', 'Follow my local conventions. Handle the assigned work packet');
+    fs.writeFileSync(externalTerra, customTerra);
+    run('install', externalTerraHome);
+    assert.equal(Object.hasOwn(state(externalTerraHome).profiles, 'terra-worker.toml'), false);
+    assert.equal(fs.readFileSync(externalTerra, 'utf8'), customTerra);
+    run('uninstall', externalTerraHome);
+    assert.equal(fs.readFileSync(externalTerra, 'utf8'), customTerra);
   }
 
   process.stdout.write('PASS portable setup install, status, recovery, preservation, and uninstall\n');

@@ -130,6 +130,7 @@ throw "Unexpected fake codex call: $($Args -join ' ')"
   Assert-True $first.Repaired 'First repair did not report a change'
   Assert-True (@($first.Backups).Count -ge 1) 'First repair did not back up config.toml before managed configuration writes'
   $config = Get-Content -LiteralPath $configPath -Raw
+  Assert-True (-not $config.Contains('max_concurrent_threads_per_session')) 'Repair overrode the host default concurrency'
   Assert-True $config.Contains($preId) 'PreToolUse trust was not restored'
   Assert-True $config.Contains($sessionId) 'SessionStart trust was not restored'
   Assert-True $config.Contains($subagentId) 'SubagentStop trust was not restored'

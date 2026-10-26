@@ -18,6 +18,29 @@ $installScript = Join-Path $pluginRoot 'scripts/install.ps1'
 $uninstallScript = Join-Path $pluginRoot 'scripts/uninstall.ps1'
 $templateDir = Join-Path $pluginRoot 'templates/agents'
 $lunaTemplate = Join-Path $templateDir 'luna-worker.toml'
+$terraTemplate = Join-Path $templateDir 'terra-worker.toml'
+$reviewerTemplate = Join-Path $templateDir 'sol-reviewer.toml'
+$previousReviewer = @'
+name = "sol_reviewer"
+description = "Read-only reviewer for critical, high-risk changes."
+model = "gpt-6.1-sol"
+model_reasoning_effort = "xhigh"
+sandbox_mode = "read-only"
+developer_instructions = """
+Review the declared outcome against its requirements and evidence, following affected callers and state transitions. Stay within that scope; do not turn it into a whole-repo audit. Do not modify files, perform production work, make the final decision, or delegate. Report findings first with precise paths; separate verified results from unverified assumptions.
+"""
+'@
+$previousReviewer = $previousReviewer.Replace("`r`n", "`n") + "`n"
+$previousManagedReviewer = $previousReviewer.Replace('Read-only reviewer for critical, high-risk changes.', 'Reviewer for critical changes; no-write duties under inherited host permissions.').Replace("sandbox_mode = `"read-only`"`n", '').Replace("`n`"`"`"`n", "`nRead-only duties are instructions, not sandbox enforcement. Custom agents inherit host permissions; do not claim write isolation without host-level runtime evidence.`n`"`"`"`n")
+$previousTerraLatest = @'
+name = "terra_worker"
+description = "Bounded work with a clear task-specific advantage over Sol Medium or the current Lead."
+model = "gpt-5.6-terra"
+developer_instructions = """
+Handle the assigned work packet strictly within its declared scope and selected reasoning effort. In normal mode, do not delegate. In Super mode, delegate only when the packet explicitly has burst_delegate=yes and burst_depth=d1, d2, or d3; d4 never delegates. Verify every acceptance criterion; if an acceptance criterion is impossible, report it instead of guessing. Return a concise result, paths, checks, and blockers.
+"""
+'@.Replace("`r`n", "`n") + "`n"
+$previousTerraHistorical = $previousTerraLatest.Replace('Bounded work with a clear task-specific advantage over Sol Medium or the current Lead.', 'Worker for bounded, verifiable tasks that require deeper reasoning.')
 $profileCount = @(Get-ChildItem -LiteralPath $templateDir -Filter '*.toml' -File).Count
 $tempRoot = Join-Path ([IO.Path]::GetTempPath()) ('codex-routing-matrix-install-' + [guid]::NewGuid().ToString('N'))
 
@@ -25,6 +48,8 @@ try {
   $freshHome = Join-Path $tempRoot 'fresh/.codex'
   $first = ((& $installScript -CodexHome $freshHome) -join [Environment]::NewLine) | ConvertFrom-Json
   Assert-True $first.Verified 'First install was not verified'
+  Assert-True ($first.VerificationScope -ceq 'profile-contracts') 'Install verification scope was not limited to profile contracts'
+  Assert-True ($first.ReviewerWriteIsolation -ceq 'NOT_VERIFIED') 'Install incorrectly claimed reviewer write isolation'
   Assert-True (@($first.Results | Where-Object { $_.Status -eq 'install' -and $_.Ownership -eq 'created' }).Count -eq $profileCount) 'First install did not own every created profile'
   Assert-True (Test-Path -LiteralPath (Join-Path $freshHome '.codex-routing-matrix.install-state.json')) 'First install did not write ownership state'
   Assert-True ($first.DefaultRules.Status -ceq 'created') 'First install did not create the default agent rules'
@@ -85,6 +110,47 @@ try {
   Assert-True ((Get-FileHash -LiteralPath $refreshBackupFile -Algorithm SHA256).Hash -ceq $localEditHash) 'Profile refresh backup did not preserve prior content'
   Assert-True ((Get-FileHash -LiteralPath $freshLuna -Algorithm SHA256).Hash -ceq (Get-FileHash -LiteralPath $lunaTemplate -Algorithm SHA256).Hash) 'Profile refresh did not install the current template'
 
+  $freshReviewer = Join-Path $freshHome 'agents/sol-reviewer.toml'
+  $freshState = Join-Path $freshHome '.codex-routing-matrix.install-state.json'
+  $stateBeforeMigration = (Get-FileHash -LiteralPath $freshState -Algorithm SHA256).Hash
+  foreach ($previousText in @($previousReviewer, $previousReviewer.Replace("`n", "`r`n"), $previousManagedReviewer, $previousManagedReviewer.Replace("`n", "`r`n"))) {
+    [IO.File]::WriteAllText($freshReviewer, $previousText, [Text.UTF8Encoding]::new($false))
+    $previousReviewerHash = (Get-FileHash -LiteralPath $freshReviewer -Algorithm SHA256).Hash
+    $expectedHash = if ($previousText.Contains('inherit host permissions')) {
+      if ($previousText.Contains("`r`n")) { '0230DF2B3D24A1F9F5462F12233DBF8B938EA2A9DB6D229A01E0D4E9C60D392E' } else { '4005B24664AF205FA3316CB3941A52F6029AFC2EF15D17833B3E188CF1E82842' }
+    } else {
+      if ($previousText.Contains("`r`n")) { '748199DF9DFBF7A3A0E62F8340FDF9B29EB4A014DDC9983D183BD482EE4D64D3' } else { '7BA63032444A01E4748C09FAE3960154E9B7C26E67BB558691F36E2F176AA085' }
+    }
+    Assert-True ($previousReviewerHash -ceq $expectedHash) 'Previous reviewer fixture no longer matches the shipped template'
+    $reviewerMigration = ((& $installScript -CodexHome $freshHome) -join [Environment]::NewLine) | ConvertFrom-Json
+    $migratedReviewer = @($reviewerMigration.Results | Where-Object { $_.Agent -ceq 'sol_reviewer' })
+    Assert-True ($migratedReviewer.Count -eq 1 -and $migratedReviewer[0].Status -ceq 'refresh' -and $migratedReviewer[0].Ownership -ceq 'created') 'Known owned reviewer did not refresh while retaining ownership'
+    Assert-True ((Get-FileHash -LiteralPath (Join-Path $migratedReviewer[0].Backup 'sol-reviewer.toml.bak') -Algorithm SHA256).Hash -ceq $previousReviewerHash) 'Reviewer migration did not preserve the old template backup'
+    Assert-True ((Get-FileHash -LiteralPath $freshReviewer -Algorithm SHA256).Hash -ceq (Get-FileHash -LiteralPath $reviewerTemplate -Algorithm SHA256).Hash) 'Reviewer migration did not install the current template'
+    Assert-True ((Get-FileHash -LiteralPath $freshState -Algorithm SHA256).Hash -ceq $stateBeforeMigration) 'Reviewer migration changed ownership state'
+    $reviewerRepeat = ((& $installScript -CodexHome $freshHome) -join [Environment]::NewLine) | ConvertFrom-Json
+    Assert-True (@($reviewerRepeat.Results | Where-Object { $_.Agent -ceq 'sol_reviewer' -and $_.Status -ceq 'kept' -and $null -eq $_.Backup }).Count -eq 1) 'Reviewer migration was not idempotent'
+  }
+
+  foreach ($previousText in @($previousTerraLatest, $previousTerraLatest.Replace("`n", "`r`n"), $previousTerraHistorical, $previousTerraHistorical.Replace("`n", "`r`n"))) {
+    $terraHome = Join-Path $tempRoot ('terra-migration-' + [guid]::NewGuid().ToString('N') + '/.codex')
+    $terraInstall = ((& $installScript -CodexHome $terraHome) -join [Environment]::NewLine) | ConvertFrom-Json
+    $terraPath = Join-Path $terraHome 'agents/terra-worker.toml'
+    [IO.File]::WriteAllText($terraPath, $previousText, [Text.UTF8Encoding]::new($false))
+    $previousTerraHash = (Get-FileHash -LiteralPath $terraPath -Algorithm SHA256).Hash
+    $expectedTerraHash = if ($previousText.Contains('deeper reasoning')) {
+      if ($previousText.Contains("`r`n")) { 'FC55BEAED703A6656F658D1718503C7C419E84131D31B6A9AD7B560A6D0D47F4' } else { '57ABDF330F7ACCA36948B25799CADC0A8E23C330F0F38F78E7DAE7224F74F073' }
+    } else {
+      if ($previousText.Contains("`r`n")) { 'B4222891BC1D4803F5D376BD3D5D5F4E45B5CFD35D35520026F806E3FF34CFE3' } else { '5F158C2E3F8A65C34165EE1F4D3AC7A580F0A5EAF78392FA6C034329521E6488' }
+    }
+    Assert-True ($previousTerraHash -ceq $expectedTerraHash) 'Previous Terra fixture no longer matches the shipped template history'
+    $terraMigration = ((& $installScript -CodexHome $terraHome) -join [Environment]::NewLine) | ConvertFrom-Json
+    $migratedTerra = @($terraMigration.Results | Where-Object { $_.Agent -ceq 'terra_worker' })
+    Assert-True ($migratedTerra.Count -eq 1 -and $migratedTerra[0].Status -ceq 'refresh') 'Known Terra profile did not refresh'
+    Assert-True ((Get-FileHash -LiteralPath (Join-Path $migratedTerra[0].Backup 'terra-worker.toml.bak') -Algorithm SHA256).Hash -ceq $previousTerraHash) 'Terra migration did not preserve the old profile backup'
+    Assert-True ((Get-FileHash -LiteralPath $terraPath -Algorithm SHA256).Hash -ceq (Get-FileHash -LiteralPath $terraTemplate -Algorithm SHA256).Hash) 'Terra migration did not install the current template'
+  }
+
   $freshRemoved = ((& $uninstallScript -CodexHome $freshHome) -join [Environment]::NewLine) | ConvertFrom-Json
   Assert-True (@($freshRemoved.Results | Where-Object { $_.Status -eq 'removed' }).Count -eq $profileCount) 'Fresh uninstall did not remove every owned profile'
   Assert-True (@(Get-ChildItem -LiteralPath (Join-Path $freshHome 'agents') -Filter '*.toml' -File).Count -eq 0) 'Fresh uninstall left owned profiles'
@@ -117,6 +183,41 @@ try {
   Assert-True (@($adoptedUninstall.Results | Where-Object { $_.Status -eq 'restored-original' }).Count -eq $profileCount) 'Force uninstall did not restore adopted profiles'
   foreach ($profile in Get-ChildItem -LiteralPath $externalAgents -Filter '*.toml' -File) {
     Assert-True ((Get-FileHash -LiteralPath $profile.FullName -Algorithm SHA256).Hash -ceq $externalHashes[$profile.Name]) "Force uninstall restored the wrong external profile: $($profile.Name)"
+  }
+
+  $reviewerCases = @(
+    $previousReviewer.Replace('model = "gpt-6.1-sol"', 'model = "gpt-6-astra"'),
+    ($previousManagedReviewer.Replace('model = "gpt-6.1-sol"', 'model = "gpt-6-astra"').Replace('Review the declared outcome', 'Follow my custom review conventions. Review the declared outcome') + 'sandbox_mode = "workspace-write"' + [Environment]::NewLine)
+  )
+  for ($case = 0; $case -lt $reviewerCases.Count; $case++) {
+    $reviewerHome = Join-Path $tempRoot "external-reviewer-$case/.codex"
+    $reviewerAgents = Join-Path $reviewerHome 'agents'
+    New-Item -ItemType Directory -Path $reviewerAgents -Force | Out-Null
+    $externalReviewer = Join-Path $reviewerAgents 'sol-reviewer.toml'
+    [IO.File]::WriteAllText($externalReviewer, $reviewerCases[$case], [Text.UTF8Encoding]::new($false))
+    $externalReviewerHash = (Get-FileHash -LiteralPath $externalReviewer -Algorithm SHA256).Hash
+    $reviewerInstall = ((& $installScript -CodexHome $reviewerHome) -join [Environment]::NewLine) | ConvertFrom-Json
+    Assert-True (@($reviewerInstall.Results | Where-Object { $_.Agent -ceq 'sol_reviewer' -and $_.Status -ceq 'kept' -and $_.Ownership -ceq 'external' }).Count -eq 1) "Compatible external reviewer case $case was not preserved as external"
+    Assert-True ((Get-FileHash -LiteralPath $externalReviewer -Algorithm SHA256).Hash -ceq $externalReviewerHash) "Install changed external reviewer case $case"
+    Assert-True ($reviewerInstall.ReviewerWriteIsolation -ceq 'NOT_VERIFIED') "Install claimed isolation for external reviewer case $case"
+    $reviewerState = Get-Content -LiteralPath (Join-Path $reviewerHome '.codex-routing-matrix.install-state.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+    Assert-True ($reviewerState.profiles.PSObject.Properties.Name -notcontains 'sol-reviewer.toml') "Install claimed ownership of external reviewer case $case"
+  }
+
+  $conflictingReviewers = @($previousReviewer, ($previousManagedReviewer + "# external custom edit`n"))
+  for ($case = 0; $case -lt $conflictingReviewers.Count; $case++) {
+    $reviewerHome = Join-Path $tempRoot "conflicting-reviewer-$case/.codex"
+    $reviewerAgents = Join-Path $reviewerHome 'agents'
+    New-Item -ItemType Directory -Path $reviewerAgents -Force | Out-Null
+    $externalReviewer = Join-Path $reviewerAgents 'sol-reviewer.toml'
+    [IO.File]::WriteAllText($externalReviewer, $conflictingReviewers[$case], [Text.UTF8Encoding]::new($false))
+    $externalReviewerHash = (Get-FileHash -LiteralPath $externalReviewer -Algorithm SHA256).Hash
+    $reviewerError = $null
+    try { & $installScript -CodexHome $reviewerHome | Out-Null } catch { $reviewerError = $_.Exception.Message }
+    Assert-True ($reviewerError -match 'sol_reviewer|sol-reviewer') "External Sol reviewer case $case did not report its conflict"
+    Assert-True ((Get-FileHash -LiteralPath $externalReviewer -Algorithm SHA256).Hash -ceq $externalReviewerHash) "Install overwrote conflicting external Sol reviewer case $case"
+    Assert-True (-not (Test-Path -LiteralPath (Join-Path $reviewerHome '.codex-routing-matrix.install-state.json'))) "Reviewer conflict case $case changed ownership state"
+    Assert-True (@(Get-ChildItem -LiteralPath $reviewerAgents -Filter '*.toml' -File).Count -eq 1) "Reviewer conflict case $case partially installed profiles"
   }
 
   $forceHome = Join-Path $tempRoot 'force/.codex'
@@ -163,7 +264,6 @@ try {
   $legacyAgents = Join-Path $legacyHome 'agents'
   $legacyBackupDir = Join-Path $legacyAgents 'sol-reviewer.toml-20260801-000000000'
   New-Item -ItemType Directory -Path $legacyBackupDir -Force | Out-Null
-  $reviewerTemplate = Join-Path $templateDir 'sol-reviewer.toml'
   Copy-Item -LiteralPath $reviewerTemplate -Destination (Join-Path $legacyAgents 'sol-reviewer.toml')
   $originalReviewer = "name = `"sol_reviewer`"`nmodel = `"gpt-5.6-sol`"`n# original external profile`n"
   [IO.File]::WriteAllText((Join-Path $legacyBackupDir 'sol-reviewer.toml'), $originalReviewer, [Text.UTF8Encoding]::new($false))
@@ -178,13 +278,13 @@ try {
   } | ConvertTo-Json -Depth 5
   [IO.File]::WriteAllText((Join-Path $legacyHome '.codex-quality-orchestrator.install-state.json'), $legacyState + [Environment]::NewLine, [Text.UTF8Encoding]::new($false))
   $legacyInstall = ((& $installScript -CodexHome $legacyHome) -join [Environment]::NewLine) | ConvertFrom-Json
-  Assert-True (@($legacyInstall.Results | Where-Object { $_.Agent -eq 'sol_reviewer' -and $_.Status -eq 'kept' -and $_.Ownership -eq 'replaced' }).Count -eq 1) 'Upgrade did not reactivate the managed Sol reviewer'
-  Assert-True ((Get-FileHash -LiteralPath (Join-Path $legacyAgents 'sol-reviewer.toml') -Algorithm SHA256).Hash -ceq (Get-FileHash -LiteralPath $reviewerTemplate -Algorithm SHA256).Hash) 'Upgrade changed the active Sol reviewer'
+  Assert-True (@($legacyInstall.Results | Where-Object { $_.Agent -eq 'sol_reviewer' -and $_.Status -eq 'kept' -and $_.Ownership -eq 'replaced' }).Count -eq 1) 'Upgrade did not reactivate the managed reviewer'
+  Assert-True ((Get-FileHash -LiteralPath (Join-Path $legacyAgents 'sol-reviewer.toml') -Algorithm SHA256).Hash -ceq (Get-FileHash -LiteralPath $reviewerTemplate -Algorithm SHA256).Hash) 'Upgrade changed the active reviewer'
   Assert-True (Test-Path -LiteralPath (Join-Path $legacyBackupDir 'sol-reviewer.toml.bak') -PathType Leaf) 'Legacy loadable backup was not converted to .bak'
   Assert-True (-not (Test-Path -LiteralPath (Join-Path $legacyBackupDir 'sol-reviewer.toml') -PathType Leaf)) 'Legacy loadable backup still shadows an agent profile'
   $legacyStateAfter = Get-Content -LiteralPath (Join-Path $legacyHome '.codex-routing-matrix.install-state.json') -Raw -Encoding UTF8 | ConvertFrom-Json
   Assert-True (Test-Path -LiteralPath (Join-Path $legacyHome '.codex-quality-orchestrator.install-state.json') -PathType Leaf) 'Migration removed the legacy state before the new install was verified'
-  Assert-True ($legacyStateAfter.profiles.PSObject.Properties.Name -contains 'sol-reviewer.toml') 'Reactivated Sol reviewer lost ownership state'
+  Assert-True ($legacyStateAfter.profiles.PSObject.Properties.Name -contains 'sol-reviewer.toml') 'Reactivated reviewer lost ownership state'
   Assert-True ([string]$legacyStateAfter.profiles.'sol-reviewer.toml'.backupFile -like '*.toml.bak') 'Reactivated reviewer did not retain a non-loadable restore backup'
 
   $lockedHome = Join-Path $tempRoot 'locked/.codex'
@@ -203,7 +303,7 @@ try {
   }
   Assert-True ($lockErrorType -ceq 'System.IO.IOException') 'Installer read state or targets before acquiring the install lock'
 
-  Write-Output 'PASS ownership-aware install, reviewer reactivation, non-loadable backups, lock ordering, and guarded uninstall'
+  Write-Output 'PASS ownership-aware install, reviewer contract migration and external preservation, non-loadable backups, lock ordering, and guarded uninstall'
 } finally {
   if (Test-Path -LiteralPath $tempRoot) {
     $resolved = [IO.Path]::GetFullPath($tempRoot)

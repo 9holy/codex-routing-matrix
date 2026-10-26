@@ -14,16 +14,16 @@ const policy = JSON.parse(fs.readFileSync(path.join(root, 'routing-policy.json')
 for (const relative of ['references/ROUTING_MATRIX.md', 'routing-policy.json', 'scripts/radar-routing-evidence.cjs']) {
   assert.ok(fs.existsSync(path.join(root, relative)), relative);
 }
-for (const route of ['luna_max', 'sol_medium', 'sol_high', 'sol_xhigh', 'sol_max', 'astra_low', 'sol_reviewer_xhigh']) {
+for (const route of ['luna_max', 'sol_medium', 'sol_high', 'sol_xhigh', 'sol_max', 'terra_xhigh', 'terra_max', 'astra_low', 'sol_reviewer_xhigh']) {
   assert.match(route + '__unit', new RegExp(policy.workPacket.hostVisibleTaskNamePattern));
 }
-for (const route of ['terra_xhigh', 'terra_max', 'terra_ultra']) {
+for (const route of ['terra', 'terra_low', 'terra_medium', 'terra_high', 'terra_ultra', 'terra_none']) {
   assert.doesNotMatch(route + '__unit', new RegExp(policy.workPacket.hostVisibleTaskNamePattern));
 }
-for (const text of [skill, rule, metadata]) assert.doesNotMatch(text, /gpt-5(?:\.\d+|-[a-z])[\w.-]*|terra_worker/i);
+for (const text of [skill, rule, metadata]) assert.doesNotMatch(text, /gpt-5(?:\.\d+|-[a-z])[\w.-]*/i);
 assert.match(skill, /\[CQO_WORK_PACKET_V1\]/);
 for (const field of ['route:', 'goal:', 'scope:', 'acceptance:', 'fallback:']) assert.ok(skill.includes(field));
-assert.match(rule, /Reuse a capable agent with relevant context/);
+assert.match(rule, /reuse relevant context/);
 assert.match(rule, /Never assume cache hits/);
 assert.match(rule, /not through an escalation ladder/);
 assert.match(rule, /Size concurrency to useful work, not host capacity/);
@@ -34,7 +34,8 @@ assert.match(rule, /depths `d1-d4`/);
 assert.match(rule, /up to 25 child threads/);
 assert.match(skill, /Never pass `model`/);
 assert.match(skill, /reasoning_effort:"high"/);
-assert.match(rule, /local analysis, implementation, debugging and tests/);
+assert.match(rule, /when steps are settled and delegation pays/);
+assert.match(rule, /Independent diagnosis, design and shared-state changes go to Sol or Lead/);
 assert.doesNotMatch(rule, /low-judgment, mechanically verifiable/);
 assert.match(metadata, /allow_implicit_invocation: true/);
 assert.ok(Buffer.from(skill).every((byte) => byte < 128));

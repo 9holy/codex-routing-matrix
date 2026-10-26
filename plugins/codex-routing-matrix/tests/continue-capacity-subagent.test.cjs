@@ -25,6 +25,7 @@ for (const [name, overrides, prefix] of [
   ['exact', {}, ''],
   ['trimmed', { last_assistant_message: `  ${message}\n` }, ''],
   ['double-bom', {}, '\uFEFF\uFEFF'],
+  ['terra', { agent_type: 'terra_worker' }, ''],
 ]) {
   const result = invoke(overrides, prefix);
   assert.equal(result.status, 0, `${name}: ${result.stderr}`);
@@ -33,6 +34,8 @@ for (const [name, overrides, prefix] of [
 
 for (const overrides of [
   { stop_hook_active: true },
+  { agent_type: 'terra_worker', stop_hook_active: true },
+  { agent_type: 'terra_worker', last_assistant_message: `prefix ${message}` },
   { last_assistant_message: `前文 ${message}` },
   { last_assistant_message: `${message} 后文` },
   { last_assistant_message: '任务完成。' },

@@ -2,9 +2,29 @@
 
 ## Unreleased
 
+- Narrow Terra routing to its documented strength: supplied screen-content understanding, concise writing from supplied material, and screen-driven scoped fixes. Route Terra directly at XHigh/Max for that specialist scope; keep complex reasoning, diagnosis, accounting, architecture, and persistence with Sol/Lead. Higher Terra effort is not treated as a substitute for Sol intelligence.
+
+- Bind the managed Astra Reviewer to `gpt-6-astra` at fixed XHigh while preserving the compatible `sol_reviewer` agent ID, `sol-reviewer.toml` profile filename, `sol_reviewer_xhigh` task prefix, and managed-profile migration.
+
+- Correct the Reviewer permission contract without changing model routing: remove the ignored per-agent sandbox setting, keep no-write duties under inherited host permissions, limit installer verification to profile contracts, and report reviewer write isolation as unverified. Preserve managed-profile migration, backups and compatible external profiles.
+
+- Refine outcome-based routing without changing models or efforts: include approved references and later changes in work packets, resolve uncertain execution targets before delegation, return repeated evidence-free tool failures to Lead, and review affected workflows/state transitions rather than only edited files. Reuse valid checks and context; record time/token/cache/rework evidence only when already available.
+
+- Retain fixed Luna Max after implementation comparisons: XHigh's read-only advantage did not carry over to code delivery. Restrict Luna to settled low-risk execution; keep independent diagnosis, migration design and shared-state changes with Sol or Lead. Minimize total cost and end-to-end time while preserving quality, context and existing plugin features.
+
+- Narrow Luna Max to low-risk work with settled steps: extraction, formatting, approved-pattern edits and prescribed checks. Route independent diagnosis, design and shared-state changes to Sol or Lead. Base suitability on comparable task results; Radar is advisory only.
+
+- Favor XHigh or Lead for cross-source identity, accounting, and persistence decisions; validate real data and UI outcomes, reserve critical independent review for before final integration checks without gating small edits, and use `followup_task` to reactivate completed agents.
+
 - Add GPT-6.1 Sol as the active Sol worker and reviewer model. Keep the existing `gpt-6-sol` root compatible for already-started tasks.
 
 - Add Sol Max dispatch for difficult independent work when XHigh is expected insufficient. Keep High as the default and choose the effort upfront, without requiring failed attempts.
+
+## 0.10.0 - 2026-10-26
+
+- Add the active `terra_worker` profile on `gpt-6.1-terra` with explicit Low/Medium/High/XHigh/Max routing and Medium as the guidance default. Use it only for bounded visual reasoning, screen workflows, supplied-material writing, or scoped code fixes with clear inputs and acceptance; it is not an automatic fallback or a replacement for suitable Luna, complex Sol work, or Astra Reviewer.
+- Migrate recognized plugin-owned Terra templates to GPT-6.1 Terra by hash while preserving custom or external conflicts, original restore records, and uninstall recovery. Keep five managed profiles and the existing four Hooks.
+- Document the official [GPT-6.1 Terra model](https://developers.openai.com/api/docs/models/gpt-6.1-terra) and [model-selection guidance](https://developers.openai.com/api/docs/guides/model-selection) without adding price claims or treating existing evaluations as comparative Terra evidence.
 
 ## 0.9.0 - 2026-09-23
 

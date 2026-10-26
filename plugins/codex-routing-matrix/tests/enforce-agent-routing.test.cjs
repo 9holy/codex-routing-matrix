@@ -54,6 +54,7 @@ function expectDeny(name, input, options) {
 function label(agentType, effort) {
   if (agentType === 'luna_worker') return 'luna_max';
   if (agentType === 'sol_medium_worker') return `sol_${effort}`;
+  if (agentType === 'terra_worker') return `terra_${effort}`;
   if (agentType === 'astra_low_worker') return 'astra_low';
   return 'sol_reviewer_xhigh';
 }
@@ -68,7 +69,7 @@ function workerInput(agentType, overrides = {}) {
     fork_turns: 'none',
     task_name: `${label(agentType, effort)}__unit_${invocation + 1}`,
     message: 'gAAAA-host-encrypted-subagent-message',
-    ...(agentType === 'sol_medium_worker' ? { reasoning_effort: effort } : {}),
+    ...(['sol_medium_worker', 'terra_worker'].includes(agentType) ? { reasoning_effort: effort } : {}),
     ...overrides,
   };
   return input;
@@ -87,6 +88,15 @@ try {
   expectDeny('sol-missing-effort', workerInput('sol_medium_worker', { reasoning_effort: undefined }));
   expectDeny('sol-medium-wrong-label', workerInput('sol_medium_worker', { task_name: 'sol_xhigh__wrong_effort' }));
   expectDeny('sol-xhigh-wrong-label', workerInput('sol_medium_worker', { reasoning_effort: 'xhigh', task_name: 'sol_medium__wrong_effort' }));
+  for (const effort of ['xhigh', 'max']) {
+    expectAllow(`terra-${effort}`, workerInput('terra_worker', { reasoning_effort: effort }));
+    expectDeny(`terra-${effort}-wrong-label`, workerInput('terra_worker', {
+      reasoning_effort: effort, task_name: `terra_${effort === 'medium' ? 'high' : 'medium'}__wrong_effort`,
+    }));
+  }
+  expectDeny('terra-missing-effort', workerInput('terra_worker', { reasoning_effort: undefined }));
+  expectDeny('terra-wrong-route', workerInput('terra_worker', { task_name: 'sol_medium__wrong_route' }));
+  expectDeny('terra-model-override', workerInput('terra_worker', { model: 'gpt-6.1-terra' }));
   expectAllow('astra-low', workerInput('astra_low_worker'));
   expectDeny('astra-effort-override', workerInput('astra_low_worker', { reasoning_effort: 'medium' }));
   expectDeny('astra-wrong-label', workerInput('astra_low_worker', { task_name: 'sol_medium__wrong_label' }));
@@ -117,7 +127,11 @@ try {
   for (const effort of ['low', 'ultra', '', null]) {
     expectDeny(`sol-invalid-effort-${effort}`, workerInput('sol_medium_worker', { reasoning_effort: effort }));
   }
+  for (const effort of ['low', 'medium', 'high', 'ultra', '', null]) {
+    expectDeny(`terra-invalid-effort-${effort}`, workerInput('terra_worker', { reasoning_effort: effort }));
+  }
   expectDeny('reviewer-effort-override', workerInput('sol_reviewer', { reasoning_effort: 'max' }));
+  expectDeny('reviewer-model-override', workerInput('sol_reviewer', { model: 'gpt-6.1-sol' }));
   expectDeny('bad-task-name', workerInput('luna_worker', { task_name: 'plain_name' }));
   expectDeny('burst-missing-depth', workerInput('luna_worker', {
     task_name: 'luna_max__d2_unit', message: 'burst_delegate=yes',
@@ -151,6 +165,28 @@ try {
   fs.appendFileSync(solPath, '\nmodel_reasoning_effort = "medium"\n');
   expectDeny('sol-pinned-profile', workerInput('sol_medium_worker'));
   installProfiles();
+
+  const reviewerPath = path.join(agentsDir, 'sol-reviewer.toml');
+  const reviewerProfile = fs.readFileSync(reviewerPath, 'utf8');
+  fs.writeFileSync(reviewerPath, reviewerProfile.replace('gpt-6-astra', 'gpt-6.1-sol'));
+  expectDeny('reviewer-wrong-model-profile', workerInput('sol_reviewer'));
+  fs.writeFileSync(reviewerPath, reviewerProfile.replace('model_reasoning_effort = "xhigh"', 'model_reasoning_effort = "high"'));
+  expectDeny('reviewer-wrong-effort-profile', workerInput('sol_reviewer'));
+  installProfiles();
+  expectAllow('reviewer-restored-astra-xhigh', workerInput('sol_reviewer'));
+
+  const terraPath = path.join(agentsDir, 'terra-worker.toml');
+  const terraProfile = fs.readFileSync(terraPath, 'utf8');
+  for (const [name, profile] of [
+    ['wrong-model', terraProfile.replace('gpt-6.1-terra', 'gpt-5.6-terra')],
+    ['wrong-name', terraProfile.replace('name = "terra_worker"', 'name = "custom_terra"')],
+    ['pinned-effort', `${terraProfile}\nmodel_reasoning_effort = "medium"\n`],
+  ]) {
+    fs.writeFileSync(terraPath, profile);
+    expectDeny(`terra-${name}-profile`, workerInput('terra_worker'));
+  }
+  installProfiles();
+  expectAllow('terra-restored-profile', workerInput('terra_worker'));
 
   fs.writeFileSync(path.join(codexHome, 'AGENTS.md'), '## User Project Rule\n');
   expectAllow('rule-text-does-not-block', workerInput('luna_worker'));

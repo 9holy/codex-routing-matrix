@@ -91,6 +91,7 @@ if (@($proof.missingProfiles).Count -gt 0) {
   Enabled = $true
   SessionStartHookTrust = 'PASS'
   PreToolUseHookTrust = 'NOT_VERIFIED'
+  ReviewerWriteIsolation = 'NOT_VERIFIED'
   SessionStart = 'PASS'
   HostExitCode = $hostExitCode
   ModelProbe = $modelProbeStatus

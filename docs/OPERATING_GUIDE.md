@@ -4,18 +4,23 @@ Lead 指当前 Astra 或 Sol 主控。Luna 明确不支持或无访问权限时�
 
 ## 一次任务怎样运行
 
-当前 `gpt-6-astra` / `gpt-6.1-sol` 是首选主控，已启动的 `gpt-6-sol` 仍保持主控。插件不会替换已经启动任务的根模型或推理档位，而是给 Lead 一套简洁的分工规则和四个具名代理；Sol worker 常规使用 High，轻量边界工作可用 Medium，复杂独立工作可用 XHigh。只有预计 XHigh 不足以完成的困难边界工作且下派有净收益时才预先选择 Max；若 XHigh 能胜任，不选 Max。
+当前 `gpt-6-astra` / `gpt-6.1-sol` 是首选主控，已启动的 `gpt-6-sol` 仍保持主控。插件不会替换已经启动任务的根模型或推理档位，而是给 Lead 一套简洁的分工规则和五个具名代理；Sol worker 常规使用 High，范围清楚的单元用 Medium（不限于琐碎或几乎不需推理的工作），复杂独立工作用 XHigh；涉及跨源身份、计费口径或持久化决策时优先 XHigh 或 Lead。困难边界工作仅预计 XHigh 不足且下派有净收益时才预先选择 Max。Terra worker 使用 `gpt-6.1-terra`，直接 XHigh/Max，专注屏幕内容理解、提供材料写作和屏幕驱动的范围明确修复；不承担通用复杂推理。复杂编码、诊断、成本口径、架构和持久化决策交给 Sol/Lead。档位按单元预先选择，不自动升级或切换运行中的预热上下文。
 
-已有能胜任且有相关上下文的代理优先继续处理；只有需要新路线的单元才进入下面的判断。
+已有能胜任且有相关上下文的代理优先继续处理；若代理已完成且需要它继续工作，使用 `followup_task` 激活，而 `send_message` 只传递消息、不触发执行。只有需要新路线的单元才进入下面的判断。
 1. Lead 先判断任务是否值得拆分。短任务、强耦合工作和顺序执行更合适的工作由 Lead 直接完成。
-2. 拆分前，Lead 写清每个单元的目标、范围、唯一文件写入者、依赖、验收标准和集成顺序。
-3. 目标明确、上下文充分且 Luna Max 能可靠完成的边界工作可交给 Luna，包括本地分析、实现、调试和测试；不把 Luna 当试错路线，也不依赖 Lead 事后救回不合适的结果。
-4. `sol_medium_worker` 保留兼容的代理名；常规独立工作默认使用 High，边界清楚的轻量工作使用 Medium，复杂独立工作可选择 XHigh。只有预计 XHigh 不足且下派有净收益时，才为困难边界工作预先选择 Max；若 XHigh 能胜任，不选 Max。
-5. Astra Low 仅在预期相对合适的 Sol 档位或当前 Lead 有明确质量或总成本收益时使用；不预设它强于 Sol XHigh，也不走自动升级梯子。
-6. 架构、安全、公共接口、生产数据、不可逆操作、模糊需求和原因尚未查清的问题留给当前 Lead 决定。
-7. 所有 Worker 结果最终都回到 Lead。Lead 检查实际差异、按集成顺序重跑必要验证，然后接受、退回一次局部修正，或自己接管。
+2. 拆分前，Lead 写清目标、范围、唯一写入者、依赖、验收和集成顺序，并附相关需求、已确认参考及后续变更。不能把“测试通过”当成需求已经完整实现。
+3. Luna 固定使用 Max，只接步骤已定、风险低且下派有净收益的工作：只读提取、格式整理、指定检查，或按 Lead 批准步骤进行的低风险代码编辑。独立诊断、设计或改共享状态留给 Sol/Lead；不把 Luna 当试错路线，也不依赖 Lead 救回不合适结果。
+4. `sol_medium_worker` 保留兼容的代理名；常规独立工作默认使用 High，范围清楚的单元使用 Medium（不限于琐碎或几乎不需推理的工作），复杂独立工作用 XHigh。困难边界工作仅预计 XHigh 不足且下派有净收益时才预先选择 Max。
+5. Terra worker 使用 `gpt-6.1-terra`，直接 XHigh/Max，任务名前缀为 `terra_<effort>`；专注屏幕内容理解、提供材料写作和屏幕驱动的范围明确修复，不承担通用复杂推理，也不自动 fallback。复杂 Sol/Astra 工作留在对应路线。
+6. Astra Low 仅在预期相对合适的 Sol 档位或当前 Lead 有明确质量或总成本收益时使用；不预设它强于 Sol XHigh，也不走自动升级梯子。
+7. 架构、安全、公共接口、生产数据、不可逆操作和模糊需求由 Lead 决定。执行目标或环境不清时先核实；工具反复失败且没有新证据时交回 Lead，不靠轮换模型继续试。
+8. Lead 对照已确认参考及后续变更验收：数据核对身份，区分配额周期与日历窗口，并保持同一快照的外推比例和金额成对；UI 以实际渲染结果对照参考核查布局与交互。关键复审覆盖受影响的调用和状态切换，安排在最终集成检查前；不扩大为全库审计，也不为每个小改动加门槛。复用有效检查，只补缺失或失效部分；局部缺陷退回一次，能力、范围或质量问题由 Lead 接管。
 
-这套流程把质量裁决留在 Lead，同时把真正适合独立执行的工作交给成本更合适的模型。优先复用有相关上下文的可靠代理；比较执行、缓存、交接、复审和返工成本，绝不假设一定命中缓存。路由选择在当前根任务内冻结，只有工作单元、边界、可用性或结果发生变化时才重新判断。
+这套流程把质量裁决留在 Lead；在能胜任的路线间，再比较总成本与端到端耗时，计入执行、上下文、缓存、交接、复审和返工，不假设命中缓存。优先复用已有相关上下文的可靠代理，只并行互不依赖且写入安全的单元；不因小幅价格差或基准而切换或重做。路由在当前根任务内冻结，只有工作单元、边界、可用性或结果变化时才重判。
+
+时间、Token、缓存和返工只记录已经取得的数据；缺少测量就明确未测，不额外调用模型或重做任务来凑指标。
+
+Astra Reviewer 的“只读”是职责指令，不是每代理单独写入沙箱；自定义代理继承宿主/父会话权限，profile 中的 `sandbox_mode` 不会覆盖它。安装或 profile 检查的 `installed`、`verified`、`PASS` 仅代表配置状态。`reviewerWriteIsolation`（PowerShell `ReviewerWriteIsolation`）保持 `NOT_VERIFIED`，直到有实际宿主级写入隔离证据；需要强制只读时由宿主/会话权限边界实现。兼容代理 ID `sol_reviewer`、profile 文件名 `sol-reviewer.toml` 和任务名前缀 `sol_reviewer_xhigh` 现绑定到 `gpt-6-astra`/固定 XHigh。详见[安全说明](../SECURITY.md)。
 
 ## 普通模式
 
@@ -93,7 +98,7 @@ macOS、Linux 桌面或 Linux 服务器上的 Codex CLI 直接运行：
 node "$HOME/.codex/.tmp/marketplaces/codex-routing-matrix/plugins/codex-routing-matrix/scripts/portable-setup.cjs" install
 ```
 
-初始化会安装 Luna、Sol（Medium/High/XHigh/Max）、Astra Low 和 Sol Reviewer 四个具名代理，维护无编号的 `Codex Routing Matrix`，并在首次安装时把英文 `Meta Rule - Conflict Resolution` 和 `Implementation` 放到 `AGENTS.md` 顶部。后两条不是守护内容，以后不会被安装器自动恢复或覆盖。
+初始化会安装 Luna、Sol（Medium/High/XHigh/Max）、Astra Low、Terra（XHigh/Max）和 Astra Reviewer 五个具名代理，维护无编号的 `Codex Routing Matrix`，并在首次安装时把英文 `Meta Rule - Conflict Resolution` 和 `Implementation` 放到 `AGENTS.md` 顶部。后两条不是守护内容，以后不会被安装器自动恢复或覆盖。
 
 升级命令：
 
@@ -134,7 +139,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$HOME\.codex\.tmp\marketpla
 
 配置守护只恢复插件注册和已经批准的当前 Hook，不修改认证、Provider、端点、模型或其他工具设置。
 
-配置守护目前只支持 Windows。macOS 或 Linux 不运行 `config-guard.ps1 -Mode Install`；核心路由和四个 Worker profile 仍可正常使用。
+配置守护目前只支持 Windows。macOS 或 Linux 不运行 `config-guard.ps1 -Mode Install`；核心路由和五个 Worker profile 仍可正常使用。
 
 ## 验证
 
@@ -156,4 +161,4 @@ macOS 或 Linux 卸载插件管理的代理配置：
 node "$HOME/.codex/.tmp/marketplaces/codex-routing-matrix/plugins/codex-routing-matrix/scripts/portable-setup.cjs" uninstall
 ```
 
-只有插件已安装并启用、四个代理配置各自唯一、四个 Hook 都已信任，才算安装完成。升级后新建任务，让新规则和代理配置进入上下文。
+只有插件已安装并启用、五个代理配置各自唯一、四个 Hook 都已信任，才算安装完成。升级后新建任务，让新规则和代理配置进入上下文。

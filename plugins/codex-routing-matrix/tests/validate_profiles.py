@@ -16,8 +16,8 @@ routing = (ROOT / "skills" / "codex-quality-routing-team" / "SKILL.md").read_tex
 
 base_version = manifest["version"].partition("+codex.")[0]
 assert manifest["name"] == "codex-routing-matrix"
-assert base_version == policy["policyVersion"] == "0.9.1"
-assert policy["schemaVersion"] == 9
+assert base_version == policy["policyVersion"] == "0.10.0"
+assert policy["schemaVersion"] == 10
 assert set(policy) == {
     "schemaVersion", "policyVersion", "toolNames", "workPacket",
     "capacityRecovery", "radarEvidence", "namedAgents", "retiredProfiles", "burstMode",
@@ -27,7 +27,7 @@ assert "team" not in policy and "sol" not in policy
 assert "allowedFallbacks" not in json.dumps(policy)
 assert "maxWorkerAttempts" not in json.dumps(policy)
 assert policy["workPacket"] == {
-    "hostVisibleTaskNamePattern": "^(luna_max|sol_medium|sol_high|sol_xhigh|sol_max|astra_low|sol_reviewer_xhigh)__([a-z0-9][a-z0-9_]{1,47})$",
+    "hostVisibleTaskNamePattern": "^(luna_max|terra_xhigh|terra_max|sol_medium|sol_high|sol_xhigh|sol_max|astra_low|sol_reviewer_xhigh)__([a-z0-9][a-z0-9_]{1,47})$",
     "hostVisibleTaskNameExample": "luna_max__unit_name",
 }
 assert policy["capacityRecovery"] == {
@@ -37,17 +37,19 @@ assert policy["capacityRecovery"] == {
 expected_roles = {
     "luna_worker": ("gpt-6-luna", "max"),
     "sol_medium_worker": ("gpt-6.1-sol", "medium"),
+    "terra_worker": ("gpt-6.1-terra", "medium"),
     "astra_low_worker": ("gpt-6-astra", "low"),
-    "sol_reviewer": ("gpt-6.1-sol", "xhigh"),
+    "sol_reviewer": ("gpt-6-astra", "xhigh"),
 }
 assert set(policy["namedAgents"]) == set(expected_roles)
-assert policy["retiredProfiles"] == [{
-    "agentType": "terra_worker",
-    "profileFile": "terra-worker.toml",
-    "templateSha256": "5f158c2e3f8a65c34165ee1f4d3ac7a580f0a5eaf78392fa6c034329521e6488",
-    "previousTemplateSha256": ["57abdf330f7acca36948b25799cadc0a8e23c330f0f38f78e7dae7224f74f073"],
-}]
-assert not (ROOT / "templates" / "agents" / "terra-worker.toml").exists()
+assert policy["retiredProfiles"] == []
+assert policy["namedAgents"]["terra_worker"]["profileFile"] == "terra-worker.toml"
+assert set(policy["namedAgents"]["terra_worker"]["previousTemplateSha256"]) == {
+    "5f158c2e3f8a65c34165ee1f4d3ac7a580f0a5eaf78392fa6c034329521e6488",
+    "57abdf330f7acca36948b25799cadc0a8e23c330f0f38f78e7dae7224f74f073",
+    "b4222891bc1d4803f5d376bd3d5d5f4e45b5cfd35d35520026f806e3ff34cfe3",
+    "fc55beaed703a6656f658d1718503c7c419e84131d31b6a9ad7b560a6d0d47f4",
+}
 assert set(hooks["hooks"]) == {"SessionStart", "UserPromptSubmit", "PreToolUse", "SubagentStop"}
 assert "SubagentStart" not in hooks["hooks"]
 
@@ -57,16 +59,21 @@ for agent_type, config in policy["namedAgents"].items():
     assert profile["name"] == agent_type
     assert profile["model"] == config["model"]
     assert config["model"] == expected_roles[agent_type][0]
-    if agent_type == "sol_medium_worker":
+    if agent_type in {"sol_medium_worker", "terra_worker"}:
         assert config["effortMode"] == "required"
-        assert config["allowedEfforts"] == ["medium", "high", "xhigh", "max"]
+        assert config["allowedEfforts"] == (["xhigh", "max"] if agent_type == "terra_worker" else ["medium", "high", "xhigh", "max"])
         assert "model_reasoning_effort" not in profile
+        assert "fixedEffort" not in config
     else:
         assert config["effortMode"] == "fixed"
         assert profile["model_reasoning_effort"] == config["fixedEffort"] == expected_roles[agent_type][1]
     assert not re.search(r"gpt-5(?:\.\d+|-[a-z])[\w.-]*", profile_path.read_text(encoding="utf-8"), re.I)
     if agent_type == "sol_reviewer":
-        assert profile["sandbox_mode"] == config["sandboxMode"] == "read-only"
+        assert "sandbox_mode" not in profile
+        assert "sandboxMode" not in config
+        assert "Do not modify files" in profile["developer_instructions"]
+        assert "inherit host permissions" in profile["developer_instructions"]
+        assert "or delegate" in profile["developer_instructions"]
     instructions = profile["developer_instructions"]
     if agent_type != "sol_reviewer":
         assert "delegate" in instructions
@@ -75,9 +82,12 @@ for agent_type, config in policy["namedAgents"].items():
 
 assert "MUST choose `luna_worker`" in rule
 assert "Never trial uncertain work on Luna" in rule
-assert "local analysis, implementation, debugging and tests" in rule
-assert "default to `high`; choose `medium` for clear, light-reasoning work or `xhigh` for complex independent work" in rule
-assert "Select `astra_low_worker` only for a clear quality or total-cost benefit" in rule
+assert "when steps are settled and delegation pays" in rule
+assert "Independent diagnosis, design and shared-state changes go to Sol or Lead" in rule
+assert "Judge fit from comparable outcomes, not benchmark scores" in rule
+assert "default `high`; `medium` for clear scope or `xhigh` for complex work" in rule
+assert "Luna stays at `max`" in rule
+assert "Select `astra_low_worker` only for a clear quality/cost benefit" in rule
 assert "Use Radar once at most per root task" in rule
 assert "Freeze each route" in rule
 assert "Selected model is at capacity. Please try a different model." in rule
@@ -100,7 +110,7 @@ for model_path in [
 ]:
     assert model_path.read_bytes().isascii(), f"model-facing file is not ASCII: {model_path}"
 for text in [rule, maintenance, routing, json.dumps(policy["namedAgents"])]:
-    assert not re.search(r"gpt-5(?:\.\d+|-[a-z])[\w.-]*|terra_worker", text, re.I)
+    assert not re.search(r"gpt-5(?:\.\d+|-[a-z])[\w.-]*", text, re.I)
 for removed in [
     ROOT / "hooks" / "routing-ledger.cjs",
     ROOT / "hooks" / "release-failed-dispatch.cjs",
